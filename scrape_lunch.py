@@ -31,11 +31,37 @@ def clean_soup_text(html):
 def extract_day_block(text, day):
     pattern = rf"{day}(.+?)(måndag|tisdag|onsdag|torsdag|fredag|$)"
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-    if match:
-        block = match.group(1)
-        lines = [l.strip() for l in block.splitlines() if len(l.strip()) > 3]
-        return lines
-    return []
+    if not match:
+        return []
+
+    block = match.group(1)
+
+    # Dela upp på typiska lunch-delar
+    split_keywords = [
+        "Dagens rätt",
+        "Dagens",
+        "Soppa",
+        "Veckans soppa",
+        "Buffé",
+        "Julbuffé"
+    ]
+
+    lines = []
+    current = ""
+
+    for word in block.split():
+        if any(word.lower().startswith(k.lower()) for k in split_keywords):
+            if current:
+                lines.append(current.strip())
+            current = word
+        else:
+            current += " " + word
+
+    if current:
+        lines.append(current.strip())
+
+    return [l for l in lines if len(l) > 5]
+
 
 # -----------------------------
 # OCR-modul
@@ -133,6 +159,21 @@ def scrape_matkallaren():
     image_url = "https://matkallaren.nu/wp-content/uploads/sites/1341/2025/12/meny-v-51.png"
     lines = ocr_image_from_url(image_url)
 
+    cleaned = []
+    for line in lines:
+        if "lunchpriser" in line.lower():
+            break
+        cleaned.append(line)
+    lines = cleaned
+
+    lines = [
+    l for l in lines
+    if "gluten" not in l.lower()
+    and "laktos" not in l.lower()
+    ]
+
+    lines = [re.sub(r"^(Måndag|Tisdag|Onsdag|Torsdag|Fredag):", r"\1", l, flags=re.IGNORECASE) for l in lines]
+
     if not lines:
         return ["Menyn publiceras som bild – kunde inte tolkas automatiskt."]
 
@@ -194,8 +235,10 @@ h1 {{
 for name, items in data.items():
     html += f"<div class='card'><h2>{name}</h2>"
     if items:
+        html += "<ul>"
         for item in items:
-            html += f"<p>{item}</p>"
+            html += f"<li>{item}</li>"
+        html += "</ul>"
     else:
         html += "<p class='empty'>Ingen lunch publicerad.</p>"
     html += "</div>"
