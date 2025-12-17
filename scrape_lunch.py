@@ -90,33 +90,41 @@ def scrape_vandalorum():
     html = fetch_html(url)
     soup = BeautifulSoup(html, "html.parser")
 
-    items = soup.select("div.menu.w-dyn-item")
-    if not items:
+    menu_divs = soup.select("div.menu-div")
+    if not menu_divs:
         return ["Kunde inte hitta lunchmeny."]
 
     lunch_items = []
 
-    # Första blocket = Dagens lunch (tis–fre)
-    first_menu = items[0]
-    texts = first_menu.select("p.menu-text")
+    for menu in menu_divs:
+        texts = menu.select("p.menu-text")
 
-    for p in texts:
-        text = p.get_text(strip=True)
+        for p in texts:
+            text = p.get_text(strip=True)
 
-        # STOPPVILLKOR
-        if text.startswith("Inkl. sallad"):
-            break
+            # hoppa tomma
+            if not text:
+                continue
 
-        # hoppa tomma rader
-        if not text:
-            continue
+            # STOPPVILLKOR exakt som du vill ha
+            if text.startswith("Inkl. sallad"):
+                return lunch_items if lunch_items else ["Ingen lunch hittades."]
 
-        lunch_items.append(text)
+            # filtrera bort uppenbart icke-lunch
+            if text.lower().startswith("à la carte"):
+                continue
 
-    if not lunch_items:
-        return ["Ingen lunch hittades hos Vandalorum."]
+            lunch_items.append(text)
 
-    return lunch_items
+        # om vi hittat något rimligt → detta är rätt block
+        if len(lunch_items) >= 2:
+            return lunch_items
+
+        # annars nollställ och testa nästa menu-div
+        lunch_items = []
+
+    return ["Ingen lunch hittades hos Vandalorum."]
+
 
 
 def scrape_matkallaren():
