@@ -149,8 +149,8 @@ def crop_day_from_image(image, day):
             )
 
             # 🔧 TIGHTARE HORISONTELL CROP
-            left = max(0, x - 10)            # mindre marginal än tidigare
-            right = min(image.width, x + w + 450)
+            left = max(0, x - 20)
+            right = min(image.width, x + w + 440)
 
             return image.crop((left, top, right, bottom))
 
