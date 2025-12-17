@@ -104,18 +104,6 @@ def scrape_vandalorum():
 # Matkällaren – bildigenkänning
 # =========================
 def find_day_positions(image):
-    """
-    Letar upp veckodagarnas positioner i menyn (via OCR),
-    och returnerar deras x-, y-position samt höjd.
-
-    Return-format:
-    {
-        "måndag": (x, y, h),
-        "tisdag": (x, y, h),
-        ...
-    }
-    """
-
     data = pytesseract.image_to_data(
         image,
         lang="swe",
@@ -134,13 +122,14 @@ def find_day_positions(image):
         if normalized in WEEKDAYS:
             x = data["left"][i]
             y = data["top"][i]
+            w = data["width"][i]
             h = data["height"][i]
 
-            # Spara endast första träffen per dag (säkrast)
             if normalized not in positions:
-                positions[normalized] = (x, y, h)
+                positions[normalized] = (x, y, w, h)
 
     return positions
+
 
 
 def crop_day_from_image(image, day):
@@ -150,7 +139,7 @@ def crop_day_from_image(image, day):
 
     sorted_days = sorted(positions.items(), key=lambda x: x[1][1])  # sortera på y
 
-    for i, (d, (x, y, h)) in enumerate(sorted_days):
+    for i, (d, (x, y, w, h)) in enumerate(sorted_days):
         if d == day:
             top = y
             bottom = (
@@ -159,12 +148,14 @@ def crop_day_from_image(image, day):
                 else image.height
             )
 
-            # 🔧 NYTT: kapa vänsterkanten
-            left = max(0, x - 20)  # 20px säkerhetsmarginal
+            # 🔧 TIGHTARE HORISONTELL CROP
+            left = max(0, x - 10)            # mindre marginal än tidigare
+            right = min(image.width, x + w + 450)
 
-            return image.crop((left, top, image.width, bottom))
+            return image.crop((left, top, right, bottom))
 
     return None
+
 
 
 def scrape_matkallaren():
