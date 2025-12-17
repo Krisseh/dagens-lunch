@@ -130,7 +130,7 @@ def scrape_vandalorum():
 
 
 def scrape_matkallaren():
-    image_url = "https://matkallaren.nu/wp-content/uploads/meny-v-51.png"
+    image_url = "https://matkallaren.nu/wp-content/uploads/sites/1341/2025/12/meny-v-51.png"
     lines = ocr_image_from_url(image_url)
 
     if not lines:
