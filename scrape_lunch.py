@@ -69,21 +69,38 @@ def scrape_madame():
     return extract_day_block(text, TODAY) if TODAY else []
 
 def scrape_vandalorum():
-    html = fetch_html("https://www.vandalorum.se/restaurang")
-    text = clean_soup_text(html)
+    url = "https://www.vandalorum.se/restaurang"
+    html = fetch_html(url)
+    soup = BeautifulSoup(html, "html.parser")
 
-    pattern = r"Dagens lunch\s*\(tisdag–fredag\)(.+?)(kr|SEK)"
-    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+    items = soup.select("div.menu.w-dyn-item")
+    if not items:
+        return ["Kunde inte hitta lunchmeny."]
 
-    if match:
-        lines = [
-            l.strip()
-            for l in match.group(1).splitlines()
-            if len(l.strip()) > 3
-        ]
-        return lines
+    lunch_items = []
 
-    return ["Dagens lunch tisdag–fredag, se restaurangens hemsida."]
+    # Första blocket = Dagens lunch (tis–fre)
+    first_menu = items[0]
+    texts = first_menu.select("p.menu-text")
+
+    for p in texts:
+        text = p.get_text(strip=True)
+
+        # STOPPVILLKOR
+        if text.startswith("Inkl. sallad"):
+            break
+
+        # hoppa tomma rader
+        if not text:
+            continue
+
+        lunch_items.append(text)
+
+    if not lunch_items:
+        return ["Ingen lunch hittades hos Vandalorum."]
+
+    return lunch_items
+
 
 def scrape_matkallaren():
     image_url = "https://matkallaren.nu/wp-content/uploads/meny-v-51.png"
