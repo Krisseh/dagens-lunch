@@ -1,24 +1,25 @@
 import requests
+import re
 from bs4 import BeautifulSoup
 from datetime import datetime
-import re
-from PIL import Image, ImageEnhance, ImageFilter
-import pytesseract
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from io import BytesIO
+import pytesseract
+from pytesseract import Output
 
-
-# -----------------------------
-# Datum & veckodag
-# -----------------------------
+# =========================
+# Datum / dag
+# =========================
 WEEKDAYS = ["måndag", "tisdag", "onsdag", "torsdag", "fredag"]
-TODAY = WEEKDAYS[datetime.now().weekday()] if datetime.now().weekday() < 5 else None
+TODAY_INDEX = datetime.now().weekday()
+TODAY = WEEKDAYS[TODAY_INDEX] if TODAY_INDEX < 5 else None
 DATE_STR = datetime.now().strftime("%Y-%m-%d")
 
-# -----------------------------
-# Hjälpfunktioner
-# -----------------------------
+# =========================
+# Helpers
+# =========================
 def fetch_html(url):
-    r = requests.get(url, timeout=15)
+    r = requests.get(url, timeout=20)
     r.encoding = "utf-8"
     return r.text
 
@@ -30,20 +31,15 @@ def clean_soup_text(html):
 
 def extract_day_block(text, day):
     pattern = rf"{day}(.+?)(måndag|tisdag|onsdag|torsdag|fredag|$)"
-    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-    if not match:
+    m = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+    if not m:
         return []
 
-    block = match.group(1)
+    block = m.group(1)
 
-    # Dela upp på typiska lunch-delar
     split_keywords = [
-        "Dagens rätt",
-        "Dagens",
-        "Soppa",
-        "Veckans soppa",
-        "Buffé",
-        "Julbuffé"
+        "Dagens rätt", "Dagens", "Soppa", "Veckans soppa",
+        "Buffé", "Julbuffé"
     ]
 
     lines = []
@@ -62,144 +58,128 @@ def extract_day_block(text, day):
 
     return [l for l in lines if len(l) > 5]
 
-
-# -----------------------------
-# OCR-modul
-# -----------------------------
-def ocr_image_from_url(image_url):
-    try:
-        img_data = requests.get(image_url, timeout=15).content
-        img = Image.open(BytesIO(img_data))
-
-        # 1. Gråskala
-        #img = img.convert("L")
-
-        # 2. Öka kontrast
-        #enhancer = ImageEnhance.Contrast(img)
-        #img = enhancer.enhance(2.5)
-
-        # 3. Skärpa
-        #img = img.filter(ImageFilter.SHARPEN)
-
-        # 4. OCR
-        text = pytesseract.image_to_string(
-            img,
-            lang="swe",
-            config="--psm 6"
-        )
-
-        lines = [
-            line.strip()
-            for line in text.splitlines()
-            if len(line.strip()) > 3
-        ]
-
-        return lines
-
-    except Exception as e:
-        print(f"OCR-fel: {e}")
-        return []
-
-# -----------------------------
-# Restaurang-scrapers
-# -----------------------------
+# =========================
+# Gästgivargården
+# =========================
 def scrape_gastgivargarden():
     html = fetch_html("https://www.gastgivargarden.com/restaurang/dagens-lunch/")
     text = clean_soup_text(html)
     return extract_day_block(text, TODAY) if TODAY else []
 
+# =========================
+# Madame
+# =========================
 def scrape_madame():
     html = fetch_html("https://madame.se/dagens-lunch/")
     text = clean_soup_text(html)
     return extract_day_block(text, TODAY) if TODAY else []
 
+# =========================
+# Vandalorum (DOM-baserad)
+# =========================
 def scrape_vandalorum():
-    url = "https://www.vandalorum.se/restaurang"
-    html = fetch_html(url)
+    html = fetch_html("https://www.vandalorum.se/restaurang")
     soup = BeautifulSoup(html, "html.parser")
 
     menu_divs = soup.select("div.menu-div")
     if not menu_divs:
-        return ["Kunde inte hitta lunchmeny."]
-
-    lunch_items = []
+        return ["Ingen lunch hittades."]
 
     for menu in menu_divs:
-        texts = menu.select("p.menu-text")
-
-        for p in texts:
-            text = p.get_text(strip=True)
-
-            # hoppa tomma
-            if not text:
+        items = []
+        for p in menu.select("p.menu-text"):
+            txt = p.get_text(strip=True)
+            if not txt:
                 continue
+            if txt.startswith("Inkl. sallad"):
+                return items
+            items.append(txt)
 
-            # STOPPVILLKOR exakt som du vill ha
-            if text.startswith("Inkl. sallad"):
-                return lunch_items if lunch_items else ["Ingen lunch hittades."]
+        if len(items) >= 2:
+            return items
 
-            # filtrera bort uppenbart icke-lunch
-            if text.lower().startswith("à la carte"):
-                continue
+    return ["Ingen lunch hittades."]
 
-            lunch_items.append(text)
+# =========================
+# Matkällaren – bildigenkänning
+# =========================
+def find_day_positions(image):
+    data = pytesseract.image_to_data(
+        image,
+        lang="swe",
+        output_type=Output.DICT,
+        config="--psm 6"
+    )
 
-        # om vi hittat något rimligt → detta är rätt block
-        if len(lunch_items) >= 2:
-            return lunch_items
+    days = WEEKDAYS
+    positions = {}
 
-        # annars nollställ och testa nästa menu-div
-        lunch_items = []
+    for i, word in enumerate(data["text"]):
+        if not word:
+            continue
+        w = word.lower().strip(":")
+        if w in days:
+            y = data["top"][i]
+            h = data["height"][i]
+            positions[w] = (y, h)
 
-    return ["Ingen lunch hittades hos Vandalorum."]
+    return positions
 
+def crop_day_from_image(image, day):
+    positions = find_day_positions(image)
+    if day not in positions:
+        return None
 
+    sorted_days = sorted(positions.items(), key=lambda x: x[1][0])
+
+    for i, (d, (y, h)) in enumerate(sorted_days):
+        if d == day:
+            top = y
+            bottom = (
+                sorted_days[i + 1][1][0]
+                if i + 1 < len(sorted_days)
+                else image.height
+            )
+            return image.crop((0, top, image.width, bottom))
+
+    return None
 
 def scrape_matkallaren():
-    image_url = "https://matkallaren.nu/wp-content/uploads/sites/1341/2025/12/meny-v-51.png"
-    lines = ocr_image_from_url(image_url)
+    if TODAY_INDEX >= 5:
+        return None
 
-    cleaned = []
-    for line in lines:
-        if "lunchpriser" in line.lower():
-            break
-        cleaned.append(line)
-    lines = cleaned
+    week = datetime.now().isocalendar().week
+    image_url = f"https://matkallaren.nu/wp-content/uploads/meny-v-{week}.png"
 
-    lines = [
-    l for l in lines
-    if "gluten" not in l.lower()
-    and "laktos" not in l.lower()
-    ]
+    img_data = requests.get(image_url, timeout=20).content
+    img = Image.open(BytesIO(img_data))
 
-    lines = [re.sub(r"^(Måndag|Tisdag|Onsdag|Torsdag|Fredag):", r"\1", l, flags=re.IGNORECASE) for l in lines]
+    img = img.convert("L")
+    img = ImageOps.autocontrast(img)
+    img = img.filter(ImageFilter.SHARPEN)
 
-    if not lines:
-        return ["Menyn publiceras som bild – kunde inte tolkas automatiskt."]
+    cropped = crop_day_from_image(img, TODAY)
+    if not cropped:
+        return None
 
-    if TODAY:
-        joined = "\n".join(lines)
-        block = extract_day_block(joined, TODAY)
+    filename = "matkallaren_dagens_lunch.png"
+    cropped.save(filename)
+    return filename
 
-        return block if block else lines
-
-
-    
-    return lines
-
-# -----------------------------
-# Kör alla restauranger
-# -----------------------------
+# =========================
+# Kör allt
+# =========================
 data = {
     "Gästgivargården": scrape_gastgivargarden(),
     "Madame": scrape_madame(),
-    "Vandalorum (veckomeny)": scrape_vandalorum(),
-    "Matkällaren (OCR)": scrape_matkallaren()
+    "Vandalorum (tis–fre)": scrape_vandalorum()
 }
 
-# -----------------------------
-# Generera HTML
-# -----------------------------
+matkallaren_image = scrape_matkallaren()
+
+# =========================
+# HTML
+# =========================
 html = f"""<!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -207,12 +187,9 @@ html = f"""<!DOCTYPE html>
 <title>Dagens lunch – {DATE_STR}</title>
 <style>
 body {{
-    font-family: system-ui, Arial, sans-serif;
+    font-family: system-ui;
     background: #f5f5f5;
     padding: 2rem;
-}}
-h1 {{
-    text-align: center;
 }}
 .card {{
     background: white;
@@ -220,10 +197,6 @@ h1 {{
     border-radius: 10px;
     margin-bottom: 1.2rem;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}}
-.empty {{
-    color: #777;
-    font-style: italic;
 }}
 </style>
 </head>
@@ -233,19 +206,21 @@ h1 {{
 """
 
 for name, items in data.items():
-    html += f"<div class='card'><h2>{name}</h2>"
-    if items:
-        html += "<ul>"
-        for item in items:
-            html += f"<li>{item}</li>"
-        html += "</ul>"
-    else:
-        html += "<p class='empty'>Ingen lunch publicerad.</p>"
-    html += "</div>"
+    html += f"<div class='card'><h2>{name}</h2><ul>"
+    for item in items:
+        html += f"<li>{item}</li>"
+    html += "</ul></div>"
+
+html += "<div class='card'><h2>Matkällaren</h2>"
+if matkallaren_image:
+    html += f"<img src='{matkallaren_image}' style='max-width:100%; border-radius:8px;'>"
+else:
+    html += "<p><em>Menyn publiceras som bild – se matkallaren.nu</em></p>"
+html += "</div>"
 
 html += "</body></html>"
 
 with open("dagens_lunch.html", "w", encoding="utf-8") as f:
     f.write(html)
 
-print("✅ Slutgiltigt script klart – dagens_lunch.html skapad")
+print("✅ Dagens lunch genererad")
