@@ -151,7 +151,7 @@ def crop_day_from_image(image, day):
             # 🔧 TIGHTARE HORISONTELL CROP
             #left = max(0, x - 10)
             #right = min(image.width, x + w + 308)
-            left  = int(image.width * 0.30)   # kapa % från vänster
+            left  = int(image.width * 0.36)   # kapa % från vänster
             right = int(image.width * 0.97)   # kapa % från höger
 
 
