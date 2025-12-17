@@ -2,9 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import re
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 import pytesseract
 from io import BytesIO
+
 
 # -----------------------------
 # Datum & veckodag
@@ -41,16 +42,32 @@ def ocr_image_from_url(image_url):
     try:
         img_data = requests.get(image_url, timeout=15).content
         img = Image.open(BytesIO(img_data))
+
+        # 1. Gråskala
+        img = img.convert("L")
+
+        # 2. Öka kontrast
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(2.5)
+
+        # 3. Skärpa
+        img = img.filter(ImageFilter.SHARPEN)
+
+        # 4. OCR
         text = pytesseract.image_to_string(
             img,
             lang="swe",
             config="--psm 6"
         )
-        return [
+
+        lines = [
             line.strip()
             for line in text.splitlines()
             if len(line.strip()) > 3
         ]
+
+        return lines
+
     except Exception as e:
         print(f"OCR-fel: {e}")
         return []
@@ -110,8 +127,9 @@ def scrape_matkallaren():
         return ["Menyn publiceras som bild – kunde inte tolkas automatiskt."]
 
     if TODAY:
-        joined = "\n".join(lines).lower()
+        joined = "\n".join(lines)
         block = extract_day_block(joined, TODAY)
+
         return block if block else lines
 
     return lines
