@@ -18,7 +18,9 @@ DATE_STR = datetime.now().strftime("%Y-%m-%d")
 # Hjälpfunktioner
 # -----------------------------
 def fetch_html(url):
-    return requests.get(url, timeout=15).text
+    r = requests.get(url, timeout=15)
+    r.encoding = "utf-8"
+    return r.text
 
 def clean_soup_text(html):
     soup = BeautifulSoup(html, "html.parser")
