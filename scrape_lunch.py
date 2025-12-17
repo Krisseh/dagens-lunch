@@ -104,6 +104,18 @@ def scrape_vandalorum():
 # Matkällaren – bildigenkänning
 # =========================
 def find_day_positions(image):
+    """
+    Letar upp veckodagarnas positioner i menyn (via OCR),
+    och returnerar deras x-, y-position samt höjd.
+
+    Return-format:
+    {
+        "måndag": (x, y, h),
+        "tisdag": (x, y, h),
+        ...
+    }
+    """
+
     data = pytesseract.image_to_data(
         image,
         lang="swe",
@@ -111,38 +123,49 @@ def find_day_positions(image):
         config="--psm 6"
     )
 
-    days = WEEKDAYS
     positions = {}
 
     for i, word in enumerate(data["text"]):
         if not word:
             continue
-        w = word.lower().strip(":")
-        if w in days:
+
+        normalized = word.lower().strip(":").strip()
+
+        if normalized in WEEKDAYS:
+            x = data["left"][i]
             y = data["top"][i]
             h = data["height"][i]
-            positions[w] = (y, h)
+
+            # Spara endast första träffen per dag (säkrast)
+            if normalized not in positions:
+                positions[normalized] = (x, y, h)
 
     return positions
+
 
 def crop_day_from_image(image, day):
     positions = find_day_positions(image)
     if day not in positions:
         return None
 
-    sorted_days = sorted(positions.items(), key=lambda x: x[1][0])
+    sorted_days = sorted(positions.items(), key=lambda x: x[1][1])  # sortera på y
 
-    for i, (d, (y, h)) in enumerate(sorted_days):
+    for i, (d, (x, y, h)) in enumerate(sorted_days):
         if d == day:
             top = y
             bottom = (
-                sorted_days[i + 1][1][0]
+                sorted_days[i + 1][1][1]
                 if i + 1 < len(sorted_days)
                 else image.height
             )
-            return image.crop((0, top, image.width, bottom))
+
+            # 🔧 NYTT: kapa vänsterkanten
+            left = max(0, x - 20)  # 20px säkerhetsmarginal
+
+            return image.crop((left, top, image.width, bottom))
 
     return None
+
 
 def scrape_matkallaren():
     if TODAY_INDEX >= 5:
