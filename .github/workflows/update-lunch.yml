@@ -21,7 +21,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install playwright beautifulsoup4
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-swe
+          pip install pytesseract pillow requests beautifulsoup4 playwright
           playwright install chromium
 
       - name: Run scraper
