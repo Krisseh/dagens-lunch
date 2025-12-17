@@ -46,14 +46,14 @@ def ocr_image_from_url(image_url):
         img = Image.open(BytesIO(img_data))
 
         # 1. Gråskala
-        img = img.convert("L")
+        #img = img.convert("L")
 
         # 2. Öka kontrast
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(2.5)
+        #enhancer = ImageEnhance.Contrast(img)
+        #img = enhancer.enhance(2.5)
 
         # 3. Skärpa
-        img = img.filter(ImageFilter.SHARPEN)
+        #img = img.filter(ImageFilter.SHARPEN)
 
         # 4. OCR
         text = pytesseract.image_to_string(
