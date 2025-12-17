@@ -1,92 +1,113 @@
-from playwright.sync_api import sync_playwright
+import requests
+from bs4 import BeautifulSoup
 from datetime import datetime
+import re
+from PIL import Image
+import pytesseract
+from io import BytesIO
 
 # -----------------------------
-# Datum / rubrik
+# Datum & veckodag
 # -----------------------------
-today_str = datetime.now().strftime("%Y-%m-%d")
-
-# -----------------------------
-# Scrapers (en per restaurang)
-# -----------------------------
-def scrape_gastgivargarden(page):
-    page.goto("https://www.gastgivargarden.com/restaurang/dagens-lunch/", timeout=30000)
-    page.wait_for_timeout(3000)
-
-    items = []
-    for p in page.locator("div.entry-content p").all():
-        txt = p.inner_text().strip()
-        if (
-            len(txt) > 15
-            and "lunch" not in txt.lower()
-            and "pris" not in txt.lower()
-        ):
-            items.append(txt)
-
-    return items
-
-
-def scrape_madame(page):
-    page.goto("https://madame.se/dagens-lunch/", timeout=30000)
-    page.wait_for_timeout(3000)
-
-    items = []
-    for li in page.locator("section li").all():
-        txt = li.inner_text().strip()
-        if len(txt) > 5:
-            items.append(txt)
-
-    return items
-
-
-def scrape_matkallaren(page):
-    page.goto("https://matkallaren.nu/meny/", timeout=30000)
-    page.wait_for_timeout(3000)
-
-    items = []
-    for el in page.locator(".menu-item, .meny-item, article, section").all():
-        txt = el.inner_text().strip()
-        if (
-            len(txt) > 10
-            and "öppettider" not in txt.lower()
-            and "kontakt" not in txt.lower()
-        ):
-            items.append(txt)
-
-    return items
-
-
-def scrape_vandalorum(page):
-    page.goto("https://www.vandalorum.se/restaurang", timeout=30000)
-    page.wait_for_timeout(3000)
-
-    items = []
-    block = page.locator("p:has-text('Dagens lunch')")
-    if block.count() > 0:
-        items.append(block.first.inner_text().strip())
-
-        next_el = block.first.locator("xpath=following-sibling::*[1]")
-        if next_el.count() > 0:
-            items.append(next_el.first.inner_text().strip())
-
-    return items
-
+WEEKDAYS = ["måndag", "tisdag", "onsdag", "torsdag", "fredag"]
+TODAY = WEEKDAYS[datetime.now().weekday()] if datetime.now().weekday() < 5 else None
+DATE_STR = datetime.now().strftime("%Y-%m-%d")
 
 # -----------------------------
-# Kör allt
+# Hjälpfunktioner
 # -----------------------------
-data = {}
+def fetch_html(url):
+    return requests.get(url, timeout=15).text
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    page = browser.new_page()
+def clean_soup_text(html):
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style"]):
+        tag.decompose()
+    return " ".join(soup.stripped_strings)
 
-    data["Gästgivargården"] = scrape_gastgivargarden(page)
-    data["Madame"] = scrape_madame(page)
-    data["Matkällaren"] = scrape_matkallaren(page)
-    data["Vandalorum"] = scrape_vandalorum(page)
+def extract_day_block(text, day):
+    pattern = rf"{day}(.+?)(måndag|tisdag|onsdag|torsdag|fredag|$)"
+    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+    if match:
+        block = match.group(1)
+        lines = [l.strip() for l in block.splitlines() if len(l.strip()) > 3]
+        return lines
+    return []
 
-    browser.close()
+# -----------------------------
+# OCR-modul
+# -----------------------------
+def ocr_image_from_url(image_url):
+    try:
+        img_data = requests.get(image_url, timeout=15).content
+        img = Image.open(BytesIO(img_data))
+        text = pytesseract.image_to_string(
+            img,
+            lang="swe",
+            config="--psm 6"
+        )
+        return [
+            line.strip()
+            for line in text.splitlines()
+            if len(line.strip()) > 3
+        ]
+    except Exception as e:
+        print(f"OCR-fel: {e}")
+        return []
+
+# -----------------------------
+# Restaurang-scrapers
+# -----------------------------
+def scrape_gastgivargarden():
+    html = fetch_html("https://www.gastgivargarden.com/restaurang/dagens-lunch/")
+    text = clean_soup_text(html)
+    return extract_day_block(text, TODAY) if TODAY else []
+
+def scrape_madame():
+    html = fetch_html("https://madame.se/dagens-lunch/")
+    text = clean_soup_text(html)
+    return extract_day_block(text, TODAY) if TODAY else []
+
+def scrape_vandalorum():
+    html = fetch_html("https://www.vandalorum.se/restaurang")
+    text = clean_soup_text(html)
+
+    pattern = r"Dagens lunch\s*\(tisdag–fredag\)(.+?)(kr|SEK)"
+    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+
+    if match:
+        lines = [
+            l.strip()
+            for l in match.group(1).splitlines()
+            if len(l.strip()) > 3
+        ]
+        return lines
+
+    return ["Dagens lunch tisdag–fredag, se restaurangens hemsida."]
+
+def scrape_matkallaren():
+    image_url = "https://matkallaren.nu/wp-content/uploads/meny-v-51.png"
+    lines = ocr_image_from_url(image_url)
+
+    if not lines:
+        return ["Menyn publiceras som bild – kunde inte tolkas automatiskt."]
+
+    if TODAY:
+        joined = "\n".join(lines).lower()
+        block = extract_day_block(joined, TODAY)
+        return block if block else lines
+
+    return lines
+
+# -----------------------------
+# Kör alla restauranger
+# -----------------------------
+data = {
+    "Gästgivargården": scrape_gastgivargarden(),
+    "Madame": scrape_madame(),
+    "Vandalorum (veckomeny)": scrape_vandalorum(),
+    "Matkällaren (OCR)": scrape_matkallaren()
+}
 
 # -----------------------------
 # Generera HTML
@@ -95,25 +116,22 @@ html = f"""<!DOCTYPE html>
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<title>Dagens lunch – {today_str}</title>
+<title>Dagens lunch – {DATE_STR}</title>
 <style>
 body {{
-    font-family: Arial, sans-serif;
-    background: #f3f3f3;
+    font-family: system-ui, Arial, sans-serif;
+    background: #f5f5f5;
+    padding: 2rem;
 }}
 h1 {{
     text-align: center;
 }}
-.container {{
-    max-width: 900px;
-    margin: auto;
-}}
 .card {{
     background: white;
-    padding: 20px;
-    margin: 20px 0;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }}
 .empty {{
     color: #777;
@@ -123,28 +141,21 @@ h1 {{
 </head>
 <body>
 
-<h1>Dagens lunch – {today_str}</h1>
-<div class="container">
+<h1>Dagens lunch – {TODAY.capitalize() if TODAY else "Helg"}</h1>
 """
 
 for name, items in data.items():
     html += f"<div class='card'><h2>{name}</h2>"
-
     if items:
         for item in items:
             html += f"<p>{item}</p>"
     else:
-        html += "<p class='empty'>Ingen lunch hittades.</p>"
-
+        html += "<p class='empty'>Ingen lunch publicerad.</p>"
     html += "</div>"
 
-html += """
-</div>
-</body>
-</html>
-"""
+html += "</body></html>"
 
 with open("dagens_lunch.html", "w", encoding="utf-8") as f:
     f.write(html)
 
-print("✅ Klar – komplett Playwright-script kördes")
+print("✅ Slutgiltigt script klart – dagens_lunch.html skapad")
