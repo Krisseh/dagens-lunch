@@ -178,6 +178,7 @@ def scrape_matkallaren():
 
     filename = "matkallaren_dagens_lunch.png"
     cropped.save(filename)
+    print("Matkällaren: bild sparad", datetime.now())
     return filename
 
 # =========================
