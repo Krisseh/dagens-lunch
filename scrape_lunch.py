@@ -204,72 +204,73 @@ html = f"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>Dagens lunch – {DATE_STR}</title>
 <style>
-:root {
+:root {{
     --bg: #f6f7f9;
     --card: #ffffff;
     --text: #1f2933;
     --muted: #6b7280;
     --accent: #2563eb;
     --radius: 12px;
-}
+}}
 
-* {
+* {{
     box-sizing: border-box;
-}
+}}
 
-body {
+body {{
     margin: 0;
     padding: 2rem 1rem;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
-}
+}}
 
-h1 {
+h1 {{
     font-size: 1.8rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
     text-align: center;
-}
+}}
 
-.card {
+.card {{
     background: var(--card);
     border-radius: var(--radius);
     padding: 1rem 1.25rem 1.25rem;
     margin-bottom: 1rem;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-}
+}}
 
-.card h2 {
+.card h2 {{
     margin: 0 0 0.5rem;
     font-size: 1.15rem;
     font-weight: 600;
     color: var(--accent);
-}
+}}
 
-.card ul {
+.card ul {{
     margin: 0;
     padding-left: 1.1rem;
-}
+}}
 
-.card li {
+.card li {{
     margin-bottom: 0.4rem;
     line-height: 1.4;
-}
+}}
 
-.card img {
+.card img {{
     display: block;
     margin-top: 0.5rem;
     border-radius: 8px;
     max-width: 100%;
-}
+}}
 
-em {
+em {{
     color: var(--muted);
     font-style: normal;
-    font
-}
+    font-size: 0.9rem;
+}}
 </style>
+
 </head>
 <body>
 
