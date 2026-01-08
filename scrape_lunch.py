@@ -274,7 +274,7 @@ em {{
 </head>
 <body>
 
-<h1>Dagens lunch – {TODAY.capitalize() if TODAY else "Helg"}</h1>
+<h1>Dagens lunch – {TODAY.capitalize() if TODAY else "Helg"} - V. {week}</h1>
 """
 
 for name, items in data.items():
