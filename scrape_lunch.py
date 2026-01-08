@@ -167,19 +167,9 @@ def scrape_matkallaren():
 
     week = datetime.now().isocalendar().week
     image_url = "https://matkallaren.nu/wp-content/uploads/sites/1341/2026/01/meny-v-2-1.png"
-
-    headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    }
-
-    response = requests.get(image_url, headers=headers, timeout=20)
-    response.raise_for_status()
-
-    img = Image.open(BytesIO(response.content))
-    img.load()  # force decoding    
-
-    #img_data = requests.get(image_url, timeout=20).content
-    #img = Image.open(BytesIO(img_data))
+ 
+    img_data = requests.get(image_url, timeout=20).content
+    img = Image.open(BytesIO(img_data))
 
     img = img.convert("L")
     img = ImageOps.autocontrast(img)
