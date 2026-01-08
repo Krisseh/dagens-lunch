@@ -166,7 +166,7 @@ def scrape_matkallaren():
         return None
 
     week = datetime.now().isocalendar().week
-    image_url = f"https://matkallaren.nu/wp-content/uploads/sites/1341/2026/01/meny-v-2-1.png"
+    image_url = "https://matkallaren.nu/wp-content/uploads/sites/1341/2026/01/meny-v-2-1.png"
 
     img_data = requests.get(image_url, timeout=20).content
     img = Image.open(BytesIO(img_data))
