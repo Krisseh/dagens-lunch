@@ -14,6 +14,7 @@ WEEKDAYS = ["måndag", "tisdag", "onsdag", "torsdag", "fredag"]
 TODAY_INDEX = datetime.now().weekday()
 TODAY = WEEKDAYS[TODAY_INDEX] if TODAY_INDEX < 5 else None
 DATE_STR = datetime.now().strftime("%Y-%m-%d")
+WEEK = int(dt.strftime("%V"))
 
 # =========================
 # Helpers
@@ -274,7 +275,7 @@ em {{
 </head>
 <body>
 
-<h1>Dagens lunch – {TODAY.capitalize() if TODAY else "Helg"} - V. {week}</h1>
+<h1>Dagens lunch – {TODAY.capitalize() if TODAY else "Helg"} - V. {WEEK}</h1>
 """
 
 for name, items in data.items():
