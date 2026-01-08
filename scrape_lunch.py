@@ -14,7 +14,8 @@ WEEKDAYS = ["måndag", "tisdag", "onsdag", "torsdag", "fredag"]
 TODAY_INDEX = datetime.now().weekday()
 TODAY = WEEKDAYS[TODAY_INDEX] if TODAY_INDEX < 5 else None
 DATE_STR = datetime.now().strftime("%Y-%m-%d")
-WEEK = int(dt.strftime("%V"))
+TODAY_WEEK = date.today()
+WEEK = TODAY_WEEK.isocalendar().week
 
 # =========================
 # Helpers
