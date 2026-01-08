@@ -1,7 +1,7 @@
 import requests
 import re
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, date
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from io import BytesIO
 import pytesseract
