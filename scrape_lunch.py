@@ -293,7 +293,7 @@ if TODAY == 'fredag':
     html += "<p><em>Schnitzelfredag!!</em></p>"
 
 else:
-    html += "<p><em>Menyn publiceras som bild – se matkallaren.nu</em></p>"
+    html += "<p><h2>Menyn publiceras som bild – se matkallaren.nu</h2></p>"
 html += "</div>"
 
 html += "</body></html>"
