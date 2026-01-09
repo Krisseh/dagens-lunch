@@ -289,7 +289,7 @@ html += "<div class='card'><h2>Matkällaren</h2>"
 if matkallaren_image and TODAY != 'fredag':
     html += f"<img src='{matkallaren_image}' style='max-width:100%; border-radius:8px;'>"
 
-if TODAY == 'fredag:
+if TODAY == 'fredag':
     html += "<p><em>Schnitzelfredag!!</em></p>"
 
 else:
