@@ -67,16 +67,10 @@ def scrape_gastgivargarden():
     html = fetch_html("https://www.gastgivargarden.com/restaurang/dagens-lunch/")
     text = clean_soup_text(html)
 
-    items = extract_day_block(text, TODAY) if TODAY else []
+    text = text.replace("Dagens soppa på buffé.", "")
+    text = text.replace("Dagens soppa på buffé", "")
 
-    items = [
-        item for item in items
-        if not item.lower().strip().startswith("dagens soppa")
-    ]
-
-    return items
-
-
+    return extract_day_block(text, TODAY) if TODAY else []
 
 # =========================
 # Madame
