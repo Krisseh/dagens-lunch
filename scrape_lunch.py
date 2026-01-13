@@ -165,26 +165,63 @@ def crop_day_from_image(image, day):
 
 def scrape_matkallaren():
     if TODAY_INDEX >= 5:
+        return None  # helg
+
+    menu_page = "https://matkallaren.nu/meny/"
+    r = requests.get(menu_page, timeout=20)
+
+    if r.status_code != 200:
+        print("Matkällaren: kunde inte hämta menysidan")
         return None
 
-    week = datetime.now().isocalendar().week
-    image_url = "https://matkallaren.nu/wp-content/uploads/sites/1341/2026/01/meny-v-2-1.png"
- 
-    img_data = requests.get(image_url, timeout=20).content
-    img = Image.open(BytesIO(img_data))
+    soup = BeautifulSoup(r.text, "html.parser")
 
+    # 1️⃣ Hitta rätt <div>
+    image_div = soup.find("div", class_="image-wrap")
+    if not image_div:
+        print("Matkällaren: kunde inte hitta image-wrap-diven")
+        return None
+
+    img = image_div.find("img")
+    if not img or not img.get("src"):
+        print("Matkällaren: kunde inte hitta img-taggen")
+        return None
+
+    image_url = img["src"]
+
+    # 2️⃣ Hämta bilden
+    img_response = requests.get(image_url, timeout=20)
+    if img_response.status_code != 200:
+        print("Matkällaren: kunde inte hämta bilden")
+        return None
+
+    content_type = img_response.headers.get("Content-Type", "")
+    if not content_type.startswith("image"):
+        print("Matkällaren: URL returnerade inte en bild")
+        return None
+
+    try:
+        img = Image.open(BytesIO(img_response.content))
+    except UnidentifiedImageError:
+        print("Matkällaren: PIL kunde inte identifiera bilden")
+        return None
+
+    # 3️⃣ Förbehandling
     img = img.convert("L")
     img = ImageOps.autocontrast(img)
     img = img.filter(ImageFilter.SHARPEN)
 
+    # 4️⃣ Crop dagens meny
     cropped = crop_day_from_image(img, TODAY)
     if not cropped:
+        print("Matkällaren: kunde inte hitta dagens rubrik i bilden")
         return None
 
     filename = "matkallaren_dagens_lunch.png"
     cropped.save(filename)
-    print("Matkällaren: bild sparad", datetime.now())
+    print("Matkällaren: bild sparad")
     return filename
+
 
 # =========================
 # Kör allt
