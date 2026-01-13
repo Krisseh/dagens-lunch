@@ -261,102 +261,99 @@ html = f"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>Dagens lunch – {DATE_STR}</title>
 <style>
-:root {
+:root {{
   --bg: #f3f1ed;
   --card-bg: #ffffff;
   --accent: #8b5e3c;
   --text: #2e2e2e;
   --muted: #6f6f6f;
   --border: #e3dfd8;
-}
+}}
 
-* {
+* {{
   box-sizing: border-box;
-}
+}}
 
-body {
+body {{
   margin: 0;
   padding: 32px 16px;
   font-family: "Georgia", "Times New Roman", serif;
   background: var(--bg);
   color: var(--text);
-}
+}}
 
-h1 {
+h1 {{
   text-align: center;
   font-size: 2.2rem;
   margin-bottom: 40px;
   letter-spacing: 0.5px;
-}
+}}
 
-.container {
+.container {{
   max-width: 900px;
   margin: 0 auto;
   display: grid;
   gap: 28px;
-}
+}}
 
-.restaurant {
+.restaurant {{
   background: var(--card-bg);
   border-radius: 14px;
   padding: 22px 26px 26px;
   border: 1px solid var(--border);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-}
+}}
 
-.restaurant h2 {
+.restaurant h2 {{
   margin: 0 0 14px 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--accent);
   border-bottom: 1px solid var(--border);
   padding-bottom: 8px;
-}
+}}
 
-.restaurant ul {
+.restaurant ul {{
   list-style: disc;
   padding-left: 20px;
   margin: 12px 0 0;
-}
+}}
 
-.restaurant li {
+.restaurant li {{
   margin-bottom: 10px;
   line-height: 1.5;
-}
+}}
 
-.restaurant li:last-child {
+.restaurant li:last-child {{
   margin-bottom: 0;
-}
+}}
 
-.restaurant p {
+.restaurant p {{
   margin: 8px 0 0;
   color: var(--muted);
-}
+}}
 
-/* Matkällaren-bild */
-.menu-image {
+.menu-image {{
   margin-top: 14px;
   border-radius: 10px;
   max-width: 100%;
   border: 1px solid var(--border);
-}
+}}
 
-/* Mobilanpassning */
-@media (max-width: 600px) {
-  body {
+@media (max-width: 600px) {{
+  body {{
     padding: 20px 12px;
-  }
+  }}
 
-  h1 {
+  h1 {{
     font-size: 1.8rem;
     margin-bottom: 28px;
-  }
+  }}
 
-  .restaurant {
+  .restaurant {{
     padding: 18px 20px 22px;
-  }
-}
-
+  }}
+}}
 </style>
 
 </head>
