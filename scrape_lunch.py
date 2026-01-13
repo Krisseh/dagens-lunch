@@ -351,7 +351,7 @@ if matkallaren_image and TODAY != 'fredag':
 if TODAY == 'fredag':
     html += "<p><em>Schnitzelfredag!!</em></p>"
 
-else:
+if not matkallaren_image:
     html += "<p><h2>Menyn publiceras som bild – se matkallaren.nu</h2></p>"
 html += "</div>"
 
