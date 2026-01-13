@@ -164,28 +164,55 @@ def crop_day_from_image(image, day):
 
 
 def scrape_matkallaren():
+    # Ingen lunch på helger
     if TODAY_INDEX >= 5:
-        return None  # helg
+        return None
 
     menu_page = "https://matkallaren.nu/meny/"
-    r = requests.get(menu_page, timeout=20)
+
+    try:
+        r = requests.get(menu_page, timeout=20)
+    except Exception as e:
+        print("Matkällaren: kunde inte hämta menysidan:", e)
+        return None
 
     if r.status_code != 200:
-        print("Matkällaren: kunde inte hämta menysidan")
+        print("Matkällaren: menysidan returnerade", r.status_code)
         return None
 
     soup = BeautifulSoup(r.text, "html.parser")
 
-    img_tag = soup.select_one("div.image-wrap img")
-    if not img_tag or not img_tag.get("src"):
-        print("Matkällaren: kunde inte hitta menybilden")
+    # 🔍 Hitta RÄTT menybild (WordPress featured image med 'meny' i title)
+    menu_img = None
+
+    for img in soup.find_all("img"):
+        classes = img.get("class", [])
+        title = (img.get("title") or "").lower()
+        alt = (img.get("alt") or "").lower()
+
+        if (
+            "wp-post-image" in classes
+            and "meny" in title
+        ):
+            menu_img = img
+            break
+
+    if not menu_img or not menu_img.get("src"):
+        print("Matkällaren: kunde inte identifiera rätt menybild")
         return None
 
-    image_url = img_tag["src"]
+    image_url = menu_img["src"]
+    print("Matkällaren: hittade menybild:", image_url)
 
-    img_response = requests.get(image_url, timeout=20)
+    # 2️⃣ Hämta bilden
+    try:
+        img_response = requests.get(image_url, timeout=20)
+    except Exception as e:
+        print("Matkällaren: kunde inte hämta bilden:", e)
+        return None
+
     if img_response.status_code != 200:
-        print("Matkällaren: kunde inte hämta bilden")
+        print("Matkällaren: bilden returnerade", img_response.status_code)
         return None
 
     if not img_response.headers.get("Content-Type", "").startswith("image"):
@@ -198,11 +225,12 @@ def scrape_matkallaren():
         print("Matkällaren: PIL kunde inte identifiera bilden")
         return None
 
+    # 3️⃣ Förbehandling för OCR-positioner
     img = img.convert("L")
     #img = ImageOps.autocontrast(img)
     #img = img.filter(ImageFilter.SHARPEN)
-    
-    print("Matkällaren image URL:", image_url)
+
+    # 4️⃣ Crop dagens meny baserat på veckodag
     cropped = crop_day_from_image(img, TODAY)
     if not cropped:
         print("Matkällaren: kunde inte hitta dagens rubrik i bilden")
@@ -210,8 +238,10 @@ def scrape_matkallaren():
 
     filename = "matkallaren_dagens_lunch.png"
     cropped.save(filename)
-    print("Matkällaren: bild sparad")
+    print("Matkällaren: bild sparad:", filename)
+
     return filename
+
 
 
 
