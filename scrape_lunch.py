@@ -262,12 +262,13 @@ html = f"""<!DOCTYPE html>
 <title>Dagens lunch – {DATE_STR}</title>
 <style>
 :root {{
-  --bg: #f3f1ed;
-  --card-bg: #ffffff;
-  --accent: #8b5e3c;
-  --text: #2e2e2e;
-  --muted: #6f6f6f;
-  --border: #e3dfd8;
+  --bg: #faf7f2;
+  --card-bg: #fffdf9;
+  --accent: #9b5c3c;
+  --accent-soft: #e9d8c8;
+  --text: #2f2a26;
+  --muted: #6f665f;
+  --border: #e6ddd3;
 }}
 
 * {{
@@ -276,84 +277,91 @@ html = f"""<!DOCTYPE html>
 
 body {{
   margin: 0;
-  padding: 32px 16px;
+  padding: 36px 16px;
   font-family: "Georgia", "Times New Roman", serif;
-  background: var(--bg);
+  background: linear-gradient(180deg, #faf7f2 0%, #f1ece5 100%);
   color: var(--text);
 }}
 
 h1 {{
   text-align: center;
-  font-size: 2.2rem;
-  margin-bottom: 40px;
-  letter-spacing: 0.5px;
+  font-size: 2.3rem;
+  margin-bottom: 42px;
+  letter-spacing: 0.6px;
+  color: #3a2f28;
 }}
 
 .container {{
   max-width: 900px;
   margin: 0 auto;
   display: grid;
-  gap: 28px;
+  gap: 30px;
 }}
 
 .restaurant {{
   background: var(--card-bg);
-  border-radius: 14px;
-  padding: 22px 26px 26px;
+  border-radius: 16px;
+  padding: 24px 28px 28px;
   border: 1px solid var(--border);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }}
 
 .restaurant h2 {{
-  margin: 0 0 14px 0;
-  font-size: 1.5rem;
+  margin: 0 0 16px 0;
+  font-size: 1.55rem;
   font-weight: 600;
   color: var(--accent);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--accent-soft);
 }}
 
 .restaurant ul {{
   list-style: disc;
-  padding-left: 20px;
-  margin: 12px 0 0;
+  padding-left: 22px;
+  margin: 14px 0 0;
 }}
 
 .restaurant li {{
-  margin-bottom: 10px;
-  line-height: 1.5;
+  margin-bottom: 12px;
+  line-height: 1.55;
 }}
 
-.restaurant li:last-child {{
-  margin-bottom: 0;
+.restaurant li::marker {{
+  color: var(--accent);
 }}
 
 .restaurant p {{
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   color: var(--muted);
+  font-style: italic;
 }}
 
 .menu-image {{
-  margin-top: 14px;
-  border-radius: 10px;
+  margin-top: 16px;
+  border-radius: 12px;
   max-width: 100%;
   border: 1px solid var(--border);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  background: #fff;
 }}
 
 @media (max-width: 600px) {{
   body {{
-    padding: 20px 12px;
+    padding: 24px 12px;
   }}
 
   h1 {{
-    font-size: 1.8rem;
-    margin-bottom: 28px;
+    font-size: 1.9rem;
+    margin-bottom: 30px;
   }}
 
   .restaurant {{
-    padding: 18px 20px 22px;
+    padding: 20px 22px 24px;
   }}
 }}
+
 </style>
 
 </head>
