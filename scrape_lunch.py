@@ -77,7 +77,7 @@ def scrape_madame():
     return extract_day_block(text, TODAY) if TODAY else []
 
 # =========================
-# Vandalorum (DOM-baserad)
+# Vandalorum
 # =========================
 def scrape_vandalorum():
     html = fetch_html("https://www.vandalorum.se/restaurang")
@@ -139,7 +139,7 @@ def crop_day_from_image(image, day):
     if day not in positions:
         return None
 
-    sorted_days = sorted(positions.items(), key=lambda x: x[1][1])  # sortera på y
+    sorted_days = sorted(positions.items(), key=lambda x: x[1][1]) 
 
     for i, (d, (x, y, w, h)) in enumerate(sorted_days):
         if d == day:
@@ -150,9 +150,6 @@ def crop_day_from_image(image, day):
                 else image.height
             )
 
-            # 🔧 TIGHTARE HORISONTELL CROP
-            #left = max(0, x - 10)
-            #right = min(image.width, x + w + 308)
             left  = int(image.width * 0.36)   # kapa % från vänster
             right = int(image.width * 0.97)   # kapa % från höger
 
@@ -164,7 +161,7 @@ def crop_day_from_image(image, day):
 
 
 def scrape_matkallaren():
-    # Ingen lunch på helger
+
     if TODAY_INDEX >= 5:
         return None
 
@@ -182,7 +179,6 @@ def scrape_matkallaren():
 
     soup = BeautifulSoup(r.text, "html.parser")
 
-    # 🔍 Hitta RÄTT menybild (WordPress featured image med 'meny' i title)
     menu_img = None
 
     for img in soup.find_all("img"):
@@ -204,7 +200,7 @@ def scrape_matkallaren():
     image_url = menu_img["src"]
     print("Matkällaren: hittade menybild:", image_url)
 
-    # 2️⃣ Hämta bilden
+
     try:
         img_response = requests.get(image_url, timeout=20)
     except Exception as e:
@@ -225,12 +221,8 @@ def scrape_matkallaren():
         print("Matkällaren: PIL kunde inte identifiera bilden")
         return None
 
-    # 3️⃣ Förbehandling för OCR-positioner
     img = img.convert("L")
-    #img = ImageOps.autocontrast(img)
-    #img = img.filter(ImageFilter.SHARPEN)
 
-    # 4️⃣ Crop dagens meny baserat på veckodag
     cropped = crop_day_from_image(img, TODAY)
     if not cropped:
         print("Matkällaren: kunde inte hitta dagens rubrik i bilden")
@@ -360,9 +352,4 @@ html += "</body></html>"
 with open("dagens_lunch.html", "w", encoding="utf-8") as f:
     f.write(html)
 
-print("✅ Dagens lunch genererad")
-
-
-#namn på matkällaren png:
-#https://matkallaren.nu/wp-content/uploads/sites/1341/2025/12/meny-v-{week}.png
-#https://matkallaren.nu/wp-content/uploads/sites/1341/2026/01/meny-v-2-1.png
+print("Dagens lunch genererad")
