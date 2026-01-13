@@ -201,7 +201,8 @@ def scrape_matkallaren():
     img = img.convert("L")
     #img = ImageOps.autocontrast(img)
     #img = img.filter(ImageFilter.SHARPEN)
-
+    
+    print("Matkällaren image URL:", image_url)
     cropped = crop_day_from_image(img, TODAY)
     if not cropped:
         print("Matkällaren: kunde inte hitta dagens rubrik i bilden")
