@@ -199,8 +199,8 @@ def scrape_matkallaren():
         return None
 
     img = img.convert("L")
-    img = ImageOps.autocontrast(img)
-    img = img.filter(ImageFilter.SHARPEN)
+    #img = ImageOps.autocontrast(img)
+    #img = img.filter(ImageFilter.SHARPEN)
 
     cropped = crop_day_from_image(img, TODAY)
     if not cropped:
