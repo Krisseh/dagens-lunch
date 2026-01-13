@@ -71,10 +71,11 @@ def scrape_gastgivargarden():
 
     items = [
         item for item in items
-        if item.strip().lower() != "dagens soppa på buffé."
+        if not item.lower().strip().startswith("dagens soppa")
     ]
 
     return items
+
 
 
 # =========================
