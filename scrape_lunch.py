@@ -64,9 +64,54 @@ def extract_day_block(text, day):
 # Gästgivargården
 # =========================
 def scrape_gastgivargarden():
-    html = fetch_html("https://www.gastgivargarden.com/restaurang/dagens-lunch/")
-    text = clean_soup_text(html)
-    return extract_day_block(text, TODAY) if TODAY else []
+    url = "https://www.gastgivargarden.com/restaurang/dagens-lunch/"
+
+    try:
+        r = requests.get(url, timeout=20)
+    except Exception as e:
+        print("Gästgivaregården: kunde inte hämta sidan:", e)
+        return []
+
+    if r.status_code != 200:
+        print("Gästgivaregården: sidan returnerade", r.status_code)
+        return []
+
+    soup = BeautifulSoup(r.text, "html.parser")
+
+    content = soup.find("div", class_="content")
+    if not content:
+        print("Gästgivaregården: kunde inte hitta content-div")
+        return []
+
+    paragraphs = content.find_all("p")
+
+    UNWANTED_EXACT = {
+        "dagens soppa på buffé."
+    }
+
+    items = []
+
+    for p in paragraphs:
+        text = p.get_text(strip=True)
+
+        if not text:
+            continue
+
+        lower = text.lower()
+
+        if lower in UNWANTED_EXACT:
+            continue
+
+        if lower.startswith("inkl.") or lower.startswith("serveras"):
+            continue
+
+        items.append(text)
+
+    if not items:
+        print("Gästgivaregården: inga rätter hittades")
+        return []
+
+    return items
 
 # =========================
 # Madame
