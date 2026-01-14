@@ -14,8 +14,7 @@ WEEKDAYS = ["måndag", "tisdag", "onsdag", "torsdag", "fredag"]
 TODAY_INDEX = datetime.now().weekday()
 TODAY = WEEKDAYS[TODAY_INDEX] if TODAY_INDEX < 5 else None
 DATE_STR = datetime.now().strftime("%Y-%m-%d")
-TODAY_WEEK = date.today()
-WEEK = TODAY_WEEK.isocalendar().week
+WEEK = date.today().isocalendar().week
 
 # =========================
 # Helpers
@@ -39,26 +38,8 @@ def extract_day_block(text, day):
 
     block = m.group(1)
 
-    split_keywords = [
-        "Dagens rätt", "Dagens", "Soppa", "Veckans soppa",
-        "Buffé", "Julbuffé"
-    ]
-
-    lines = []
-    current = ""
-
-    for word in block.split():
-        if any(word.lower().startswith(k.lower()) for k in split_keywords):
-            if current:
-                lines.append(current.strip())
-            current = word
-        else:
-            current += " " + word
-
-    if current:
-        lines.append(current.strip())
-
-    return [l for l in lines if len(l) > 5]
+    lines = re.split(r"(?:Dagens rätt|Dagens fisk|Soppa|Buffé)", block, flags=re.I)
+    return [l.strip(" :-") for l in lines if len(l.strip()) > 10]
 
 # =========================
 # Gästgivargården
@@ -66,10 +47,7 @@ def extract_day_block(text, day):
 def scrape_gastgivargarden():
     html = fetch_html("https://www.gastgivargarden.com/restaurang/dagens-lunch/")
     text = clean_soup_text(html)
-
-    text = text.replace("Dagens soppa på buffé.", "")
-    text = text.replace("Dagens soppa på buffé", "")
-
+    text = re.sub(r"Dagens soppa på buffé\.?", "", text, flags=re.I)
     return extract_day_block(text, TODAY) if TODAY else []
 
 # =========================
@@ -77,24 +55,65 @@ def scrape_gastgivargarden():
 # =========================
 def scrape_madame():
     html = fetch_html("https://madame.se/dagens-lunch/")
-    text = clean_soup_text(html)
-    return extract_day_block(text, TODAY) if TODAY else []
+    return extract_day_block(clean_soup_text(html), TODAY) if TODAY else []
 
 # =========================
-# Hotell Vidöstern
+# Hotell Vidöstern (FIX)
 # =========================
 def scrape_vidostern():
     html = fetch_html("https://www.hotelvidostern.se/matsedeln")
-    text = clean_soup_text(html)
-    return extract_day_block(text, TODAY) if TODAY else []
+    soup = BeautifulSoup(html, "html.parser")
+
+    for entry in soup.select("div.lunch-entry"):
+        day = entry.find("h3")
+        if not day:
+            continue
+
+        if day.get_text(strip=True).lower() != TODAY:
+            continue
+
+        p = entry.find("p")
+        if not p:
+            return []
+
+        lines = [
+            line.strip()
+            for line in p.get_text("\n").split("\n")
+            if len(line.strip()) > 5
+        ]
+
+        return lines
+
+    return []
 
 # =========================
-# Rasta Värnamo
+# Rasta Värnamo (NY, HTML-baserad)
 # =========================
 def scrape_rasta():
     html = fetch_html("https://www.rasta.se/varnamo/dagens-ratt/")
-    text = clean_soup_text(html)
-    return extract_day_block(text, TODAY) if TODAY else []
+    soup = BeautifulSoup(html, "html.parser")
+
+    for entry in soup.select("div.lunch-entry"):
+        day = entry.find("h3")
+        if not day:
+            continue
+
+        if day.get_text(strip=True).lower() != TODAY:
+            continue
+
+        p = entry.find("p")
+        if not p:
+            return []
+
+        lines = [
+            line.strip()
+            for line in p.get_text("\n").split("\n")
+            if len(line.strip()) > 5
+        ]
+
+        return lines
+
+    return []
 
 # =========================
 # Vandalorum
@@ -103,18 +122,12 @@ def scrape_vandalorum():
     html = fetch_html("https://www.vandalorum.se/restaurang")
     soup = BeautifulSoup(html, "html.parser")
 
-    menu_divs = soup.select("div.menu-div")
-    if not menu_divs:
-        return ["Ingen lunch hittades."]
-
-    for menu in menu_divs:
+    for menu in soup.select("div.menu-div"):
         items = []
         for p in menu.select("p.menu-text"):
             txt = p.get_text(strip=True)
-            if not txt:
+            if not txt or txt.startswith("Inkl. sallad"):
                 continue
-            if txt.startswith("Inkl. sallad"):
-                return items
             items.append(txt)
 
         if len(items) >= 2:
@@ -123,7 +136,7 @@ def scrape_vandalorum():
     return ["Ingen lunch hittades."]
 
 # =========================
-# Matkällaren – OCR / bild
+# Matkällaren – REVERT (fungerande version)
 # =========================
 def find_day_positions(image):
     data = pytesseract.image_to_data(
@@ -134,20 +147,15 @@ def find_day_positions(image):
     )
 
     positions = {}
-
     for i, word in enumerate(data["text"]):
-        if not word:
-            continue
-
-        normalized = word.lower().strip(":").strip()
-        if normalized in WEEKDAYS:
-            x = data["left"][i]
-            y = data["top"][i]
-            w = data["width"][i]
-            h = data["height"][i]
-            if normalized not in positions:
-                positions[normalized] = (x, y, w, h)
-
+        w = word.lower().strip(":")
+        if w in WEEKDAYS:
+            positions[w] = (
+                data["left"][i],
+                data["top"][i],
+                data["width"][i],
+                data["height"][i],
+            )
     return positions
 
 def crop_day_from_image(image, day):
@@ -155,17 +163,13 @@ def crop_day_from_image(image, day):
     if day not in positions:
         return None
 
-    sorted_days = sorted(positions.items(), key=lambda x: x[1][1])
-
-    for i, (d, (x, y, w, h)) in enumerate(sorted_days):
-        if d == day:
-            top = y
-            bottom = sorted_days[i + 1][1][1] if i + 1 < len(sorted_days) else image.height
-            left  = int(image.width * 0.36)
-            right = int(image.width * 0.97)
-            return image.crop((left, top, right, bottom))
-
-    return None
+    y = positions[day][1]
+    return image.crop((
+        int(image.width * 0.36),
+        y,
+        int(image.width * 0.97),
+        image.height
+    ))
 
 def scrape_matkallaren():
     if TODAY_INDEX >= 5:
@@ -174,14 +178,14 @@ def scrape_matkallaren():
     html = fetch_html("https://matkallaren.nu/meny/")
     soup = BeautifulSoup(html, "html.parser")
 
-    menu_img = soup.select_one("div.image-wrap img.wp-post-image")
-    if not menu_img or not menu_img.get("src"):
+    img = soup.select_one("div.image-wrap img.wp-post-image")
+    if not img:
         return None
 
-    img_response = requests.get(menu_img["src"], timeout=20)
-    img = Image.open(BytesIO(img_response.content)).convert("L")
+    img_data = requests.get(img["src"]).content
+    image = Image.open(BytesIO(img_data)).convert("L")
 
-    cropped = crop_day_from_image(img, TODAY)
+    cropped = crop_day_from_image(image, TODAY)
     if not cropped:
         return None
 
@@ -211,10 +215,8 @@ html = f"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>Dagens lunch – {DATE_STR}</title>
 <style>
+
 :root {{
-
-
-
     --bg: #faf7f2;
     --card: #fffdf9;
     --text: #2f2a26;
@@ -246,7 +248,6 @@ h1 {{
     color: #3a2f28;
 }}
 
-
 .card {{
     background: var(--card);
     border-radius: var(--radius);
@@ -257,8 +258,6 @@ h1 {{
         0 6px 18px rgba(0, 0, 0, 0.06),
         inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }}
-
-
 
 .card h2 {{
     margin: 0 0 0.6rem;
@@ -284,8 +283,6 @@ h1 {{
     color: var(--accent);
 }}
 
-
-
 .card img {{
     display: block;
     margin-top: 0.6rem;
@@ -294,13 +291,11 @@ h1 {{
     border: 1px solid #e6ddd3;
 }}
 
-
 em {{
     color: var(--muted);
     font-style: normal;
     font-size: 0.9rem;
 }}
-
 
 </style>
 </head>
