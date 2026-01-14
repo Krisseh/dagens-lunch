@@ -262,108 +262,79 @@ html = f"""<!DOCTYPE html>
 <title>Dagens lunch – {DATE_STR}</title>
 <style>
 :root {{
-  --bg: #faf7f2;
-  --card-bg: #fffdf9;
-  --accent: #9b5c3c;
-  --accent-soft: #ead7c5;
-  --text: #2f2a26;
-  --muted: #6f665f;
-  --border: #e6ddd3;
+    --bg: #faf7f2;
+    --card: #fffdf9;
+    --text: #2f2a26;
+    --muted: #6f665f;
+    --accent: #9b5c3c;
+    --radius: 12px;
 }}
 
 * {{
-  box-sizing: border-box;
+    box-sizing: border-box;
 }}
 
 body {{
-  margin: 0;
-  padding: 32px 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-               Roboto, Oxygen, Ubuntu, Cantarell,
-               "Helvetica Neue", Arial, sans-serif;
-  background: linear-gradient(180deg, #faf7f2 0%, #f1ece5 100%);
-  color: var(--text);
+    margin: 0;
+    padding: 2rem 1rem;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                 "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #faf7f2 0%, #f1ece5 100%);
+    color: var(--text);
 }}
 
 h1 {{
-  text-align: center;
-  font-size: 2.2rem;
-  margin-bottom: 40px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: #3a2f28;
-}}
-
-.container {{
-  max-width: 900px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}}
-
-.restaurant {{
-  background: var(--card-bg);
-  border-radius: 16px;
-  padding: 22px 26px 26px;
-  border: 1px solid var(--border);
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}}
-
-.restaurant h2 {{
-  margin: 0 0 14px 0;
-  font-size: 1.45rem;
-  font-weight: 600;
-  color: var(--accent);
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--accent-soft);
-}}
-
-.restaurant ul {{
-  list-style: disc;
-  padding-left: 22px;
-  margin: 12px 0 0;
-}}
-
-.restaurant li {{
-  margin-bottom: 10px;
-  line-height: 1.5;
-}}
-
-.restaurant li::marker {{
-  color: var(--accent);
-}}
-
-.restaurant p {{
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-style: italic;
-}}
-
-.menu-image {{
-  margin-top: 14px;
-  border-radius: 12px;
-  max-width: 100%;
-  border: 1px solid var(--border);
-  background: #fff;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
-}}
-
-@media (max-width: 600px) {{
-  body {{
-    padding: 22px 12px;
-  }}
-
-  h1 {{
     font-size: 1.9rem;
-    margin-bottom: 28px;
-  }}
+    font-weight: 700;
+    margin-bottom: 1.75rem;
+    text-align: center;
+    color: #3a2f28;
+}}
 
-  .restaurant {{
-    padding: 18px 20px 22px;
-  }}
+.card {{
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem 1.25rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid #e6ddd3;
+    box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}}
+
+.card h2 {{
+    margin: 0 0 0.6rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--accent);
+}}
+
+.card ul {{
+    margin: 0;
+    padding-left: 1.2rem;
+}}
+
+.card li {{
+    margin-bottom: 0.45rem;
+    line-height: 1.45;
+}}
+
+.card li::marker {{
+    color: var(--accent);
+}}
+
+.card img {{
+    display: block;
+    margin-top: 0.6rem;
+    border-radius: 8px;
+    max-width: 100%;
+    border: 1px solid #e6ddd3;
+}}
+
+em {{
+    color: var(--muted);
+    font-style: normal;
+    font-size: 0.9rem;
 }}
 
 </style>
