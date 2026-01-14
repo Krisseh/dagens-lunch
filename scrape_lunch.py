@@ -105,7 +105,41 @@ def scrape_vandalorum():
             return items
 
     return ["Ingen lunch hittades."]
-    
+
+
+# =========================
+# Rasta
+# =========================
+def scrape_rasta():
+    html = fetch_html("https://www.rasta.se/varnamo/dagens-ratt/")
+    soup = BeautifulSoup(html, "html.parser")
+
+    for entry in soup.select("div.lunch-entry"):
+        day_tag = entry.find("h3")
+        if not day_tag:
+            continue
+
+        day = day_tag.get_text(strip=True).lower()
+        if day != TODAY:
+            continue
+
+        p = entry.find("p")
+        if not p:
+            return []
+
+        lines = []
+        for line in p.get_text("\n").split("\n"):
+            clean = line.strip()
+            if not clean:
+                continue
+            if clean.lower() == "dagens fisk":
+                continue
+            lines.append(clean)
+
+        return lines
+
+    return []
+
 # =========================
 # Vidöstern
 # =========================
@@ -278,7 +312,8 @@ data = {
     "Gästgivargården": scrape_gastgivargarden(),
     "Madame": scrape_madame(),
     "Vandalorum (tis–fre)": scrape_vandalorum(),
-    "Vidöstern": scrape_vidostern()
+    "Vidöstern": scrape_vidostern(),
+    "Rasta": scrape_rasta()
 }
 
 matkallaren_image = scrape_matkallaren()
