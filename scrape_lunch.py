@@ -105,6 +105,36 @@ def scrape_vandalorum():
             return items
 
     return ["Ingen lunch hittades."]
+    
+# =========================
+# Vidöstern
+# =========================
+def scrape_vidostern():
+    html = fetch_html("https://www.hotelvidostern.se/matsedeln")
+    soup = BeautifulSoup(html, "html.parser")
+
+    # hitta <strong>Onsdag</strong> (eller annan dag)
+    for strong in soup.find_all("strong"):
+        day = strong.get_text(strip=True).lower()
+
+        if day != TODAY:
+            continue
+
+        # menyn ligger i nästa <p>
+        menu_p = strong.find_parent("p").find_next_sibling("p")
+        if not menu_p:
+            return []
+
+        # dela upp på <br> till separata rätter
+        lines = [
+            line.strip()
+            for line in menu_p.get_text("\n").split("\n")
+            if len(line.strip()) > 5
+        ]
+
+        return lines
+
+    return []
 
 # =========================
 # Matkällaren – bildigenkänning
@@ -247,7 +277,8 @@ def scrape_matkallaren():
 data = {
     "Gästgivargården": scrape_gastgivargarden(),
     "Madame": scrape_madame(),
-    "Vandalorum (tis–fre)": scrape_vandalorum()
+    "Vandalorum (tis–fre)": scrape_vandalorum(),
+    "Vidöstern": scrape_vidostern()
 }
 
 matkallaren_image = scrape_matkallaren()
