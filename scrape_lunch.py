@@ -211,7 +211,97 @@ html = f"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>Dagens lunch – {DATE_STR}</title>
 <style>
-/* (din befintliga CSS – oförändrad) */
+:root {{
+
+
+
+    --bg: #faf7f2;
+    --card: #fffdf9;
+    --text: #2f2a26;
+    --muted: #6f665f;
+    --accent: #9b5c3c;
+    --radius: 12px;
+}}
+
+* {{
+    box-sizing: border-box;
+}}
+
+
+body {{
+    margin: 0;
+    padding: 2rem 1rem;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                 "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #faf7f2 0%, #f1ece5 100%);
+    color: var(--text);
+}}
+
+
+h1 {{
+    font-size: 1.9rem;
+    font-weight: 700;
+    margin-bottom: 1.75rem;
+    text-align: center;
+    color: #3a2f28;
+}}
+
+
+.card {{
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem 1.25rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid #e6ddd3;
+    box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}}
+
+
+
+.card h2 {{
+    margin: 0 0 0.6rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--accent);
+}}
+
+
+.card ul {{
+    margin: 0;
+    padding-left: 1.2rem;
+}}
+
+
+.card li {{
+    margin-bottom: 0.45rem;
+    line-height: 1.45;
+}}
+
+
+.card li::marker {{
+    color: var(--accent);
+}}
+
+
+
+.card img {{
+    display: block;
+    margin-top: 0.6rem;
+    border-radius: 8px;
+    max-width: 100%;
+    border: 1px solid #e6ddd3;
+}}
+
+
+em {{
+    color: var(--muted);
+    font-style: normal;
+    font-size: 0.9rem;
+}}
+
+
 </style>
 </head>
 <body>
