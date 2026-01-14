@@ -320,8 +320,8 @@ data = {
     "Gästgivargården": scrape_gastgivargarden(),
     "Madame": scrape_madame(),
     "Vandalorum (tis–fre)": scrape_vandalorum(),
-    "Vidöstern": scrape_vidostern(),
-    "Rasta": scrape_rasta()
+    "Vidöstern": scrape_vidostern()
+    #"Rasta": scrape_rasta()
 }
 
 matkallaren_image = scrape_matkallaren()
