@@ -119,13 +119,20 @@ def scrape_rasta():
         if not day_tag:
             continue
 
-        day = day_tag.get_text(strip=True).lower()
-        if day != TODAY:
+        # normalisera bort osynliga tecken
+        day_text = (
+            day_tag.get_text(strip=True)
+            .lower()
+            .replace("\u200b", "")
+            .replace("\xa0", "")
+        )
+
+        if TODAY not in day_text:
             continue
 
         p = entry.find("p")
         if not p:
-            return []
+            continue
 
         lines = []
         for line in p.get_text("\n").split("\n"):
@@ -139,6 +146,7 @@ def scrape_rasta():
         return lines
 
     return []
+
 
 # =========================
 # Vidöstern
