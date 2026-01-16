@@ -444,7 +444,7 @@ if matkallaren_image and TODAY != 'fredag':
     html += f"<img src='{matkallaren_image}' style='max-width:100%; border-radius:8px;'>"
 
 if TODAY == 'fredag':
-    html += "<p><li>Schnitzelfredag!!</li></p>"
+    html += "<ul><li>Schnitzelfredag!!</li></ul>"
 
 if not matkallaren_image:
     html += "<p><h2>Menyn publiceras som bild – se matkallaren.nu</h2></p>"
