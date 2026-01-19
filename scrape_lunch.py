@@ -169,26 +169,27 @@ def scrape_vidostern():
     html = fetch_html("https://www.hotelvidostern.se/matsedeln")
     soup = BeautifulSoup(html, "html.parser")
 
-    # hitta <strong>Onsdag</strong> (eller annan dag)
-    for strong in soup.find_all("strong"):
-        day = strong.get_text(strip=True).lower()
+    strongs = soup.find_all("strong")
 
-        if day != TODAY:
+    for i, strong in enumerate(strongs):
+        day_text = strong.get_text(strip=True).lower()
+
+        if day_text != TODAY:
             continue
 
-        # menyn ligger i nästa <p>
-        menu_p = strong.find_parent("p").find_next_sibling("p")
-        if not menu_p:
-            return []
+        items = []
 
-        # dela upp på <br> till separata rätter
-        lines = [
-            line.strip()
-            for line in menu_p.get_text("\n").split("\n")
-            if len(line.strip()) > 5
-        ]
+        current_p = strong.find_parent("p")
 
-        return lines
+        for p in current_p.find_next_siblings("p"):
+            if p.find("strong"):
+                break
+
+            text = p.get_text(strip=True)
+            if len(text) > 5:
+                items.append(text)
+
+        return items
 
     return []
 
@@ -346,7 +347,7 @@ matkallaren_image = scrape_matkallaren()
 html = f"""<!DOCTYPE html>
 <html lang="sv">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" http-equiv="refresh" content="60">
 <title>Dagens lunch – {DATE_STR}</title>
 <style>
 :root {{
