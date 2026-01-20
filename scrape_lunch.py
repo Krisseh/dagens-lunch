@@ -79,13 +79,17 @@ def scrape_madame():
     html = fetch_html("https://madame.se/dagens-lunch/")
     soup = BeautifulSoup(html, "html.parser")
 
-    for h5 in soup.select("div.lunch_weekdays h5"):
+    container = soup.find("div", class_="lunch_weekdays")
+    if not container:
+        return []
+
+    for h5 in container.find_all("h5"):
         day_text = h5.get_text(strip=True).lower()
 
         if day_text != TODAY:
             continue
 
-        dish_p = h5.find_next_sibling("p", class_="main_dish")
+        dish_p = h5.find_next("p", class_="main_dish")
         if not dish_p:
             return []
 
