@@ -1,6 +1,6 @@
 import requests
 import re
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from datetime import datetime, date
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from io import BytesIO
@@ -177,44 +177,38 @@ def scrape_vidostern():
     if not container:
         return []
 
-    # alla <strong> som faktiskt är veckodagar
     day_nodes = []
     for strong in container.find_all("strong"):
         txt = strong.get_text(strip=True).lower()
         if txt in WEEKDAYS:
             day_nodes.append(strong)
 
-    for i, day_node in enumerate(day_nodes):
+    for day_node in day_nodes:
         if day_node.get_text(strip=True).lower() != TODAY:
             continue
 
         items = []
 
-        # startpunkt: <p> som innehåller dagens <strong>
         start_p = day_node.find_parent("p")
         if not start_p:
             continue
 
-        # iterera framåt i dokumentordning (inte bara <p>)
         for el in start_p.next_siblings:
-
-            # om vi träffar nästa dag → sluta
-            if getattr(el, "find", None):
+            if hasattr(el, "name") and el.name:
                 strong = el.find("strong")
                 if strong and strong.get_text(strip=True).lower() in WEEKDAYS:
                     break
 
-            # hantera <p>-taggar
-            if getattr(el, "get_text", None):
                 text = el.get_text(strip=True)
-            else:
-                # hantera lösa textnoder (FREDAG!)
+
+            elif isinstance(el, NavigableString):
                 text = str(el).strip()
+            else:
+                continue
 
             if len(text) < 5:
                 continue
 
-            # filtrera bort skräp
             lowered = text.lower()
             if (
                 "pris" in lowered
