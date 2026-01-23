@@ -169,6 +169,8 @@ def scrape_rasta():
 # =========================
 # Vidöstern
 # =========================
+from bs4 import NavigableString
+
 def scrape_vidostern():
     html = fetch_html("https://www.hotelvidostern.se/matsedeln")
     soup = BeautifulSoup(html, "html.parser")
@@ -177,27 +179,34 @@ def scrape_vidostern():
     if not container:
         return []
 
+    # hitta alla <strong> som är veckodagar (inkl helg)
     day_nodes = []
     for strong in container.find_all("strong"):
         txt = strong.get_text(strip=True).lower()
-        if txt in WEEKDAYS:
+        if txt in ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]:
             day_nodes.append(strong)
 
     for day_node in day_nodes:
-        if day_node.get_text(strip=True).lower() != TODAY:
+        day_name = day_node.get_text(strip=True).lower()
+
+        # ✅ visa endast dagens vardag
+        if day_name != TODAY:
             continue
 
         items = []
-
         start_p = day_node.find_parent("p")
         if not start_p:
             continue
 
         for el in start_p.next_siblings:
+
+            # om vi stöter på nästa dag (vardag ELLER helg) → stoppa
             if hasattr(el, "name") and el.name:
                 strong = el.find("strong")
-                if strong and strong.get_text(strip=True).lower() in WEEKDAYS:
-                    break
+                if strong:
+                    next_day = strong.get_text(strip=True).lower()
+                    if next_day in ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]:
+                        break
 
                 text = el.get_text(strip=True)
 
@@ -210,6 +219,8 @@ def scrape_vidostern():
                 continue
 
             lowered = text.lower()
+
+            # filtrera bort skräp / info
             if (
                 "pris" in lowered
                 or "serveras mellan" in lowered
