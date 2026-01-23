@@ -173,25 +173,59 @@ def scrape_vidostern():
     html = fetch_html("https://www.hotelvidostern.se/matsedeln")
     soup = BeautifulSoup(html, "html.parser")
 
-    strongs = soup.find_all("strong")
+    container = soup.find("div", class_="article-dynamic-template-content")
+    if not container:
+        return []
 
-    for i, strong in enumerate(strongs):
-        day_text = strong.get_text(strip=True).lower()
+    # alla <strong> som faktiskt är veckodagar
+    day_nodes = []
+    for strong in container.find_all("strong"):
+        txt = strong.get_text(strip=True).lower()
+        if txt in WEEKDAYS:
+            day_nodes.append(strong)
 
-        if day_text != TODAY:
+    for i, day_node in enumerate(day_nodes):
+        if day_node.get_text(strip=True).lower() != TODAY:
             continue
 
         items = []
 
-        current_p = strong.find_parent("p")
+        # startpunkt: <p> som innehåller dagens <strong>
+        start_p = day_node.find_parent("p")
+        if not start_p:
+            continue
 
-        for p in current_p.find_next_siblings("p"):
-            if p.find("strong"):
-                break
+        # iterera framåt i dokumentordning (inte bara <p>)
+        for el in start_p.next_siblings:
 
-            text = p.get_text(strip=True)
-            if len(text) > 5:
-                items.append(text)
+            # om vi träffar nästa dag → sluta
+            if getattr(el, "find", None):
+                strong = el.find("strong")
+                if strong and strong.get_text(strip=True).lower() in WEEKDAYS:
+                    break
+
+            # hantera <p>-taggar
+            if getattr(el, "get_text", None):
+                text = el.get_text(strip=True)
+            else:
+                # hantera lösa textnoder (FREDAG!)
+                text = str(el).strip()
+
+            if len(text) < 5:
+                continue
+
+            # filtrera bort skräp
+            lowered = text.lower()
+            if (
+                "pris" in lowered
+                or "serveras mellan" in lowered
+                or "pensionär" in lowered
+                or "välkommen" in lowered
+                or "information" in lowered
+            ):
+                continue
+
+            items.append(text)
 
         return items
 
