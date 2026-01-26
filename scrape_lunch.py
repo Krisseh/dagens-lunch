@@ -169,7 +169,9 @@ def scrape_rasta():
 # =========================
 # Vidöstern
 # =========================
+
 def scrape_vidostern():
+    print("DEBUG: scrape_vidostern() startar")
     html = fetch_html("https://www.hotelvidostern.se/matsedeln")
     soup = BeautifulSoup(html, "html.parser")
 
@@ -217,6 +219,7 @@ def scrape_vidostern():
 
         items.append(text)
 
+    print(items)
     return items
 
 
