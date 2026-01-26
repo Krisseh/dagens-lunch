@@ -169,8 +169,6 @@ def scrape_rasta():
 # =========================
 # Vidöstern
 # =========================
-from bs4 import NavigableString
-
 def scrape_vidostern():
     html = fetch_html("https://www.hotelvidostern.se/matsedeln")
     soup = BeautifulSoup(html, "html.parser")
@@ -179,62 +177,55 @@ def scrape_vidostern():
     if not container:
         return []
 
-    # hitta alla <strong> som är veckodagar (inkl helg)
-    day_nodes = []
-    for strong in container.find_all("strong"):
-        txt = strong.get_text(strip=True).lower()
-        if txt in ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]:
-            day_nodes.append(strong)
+    WEEKDAYS_ALL = ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]
+    WEEKDAYS_WEEK = ["måndag", "tisdag", "onsdag", "torsdag", "fredag"]
 
-    for day_node in day_nodes:
-        day_name = day_node.get_text(strip=True).lower()
+    blocks = []
+    current_day = None
+    current_items = []
 
-        # ✅ visa endast dagens vardag
-        if day_name != TODAY:
+    for el in container.find_all(["p", "strong"]):
+        text = el.get_text(strip=True)
+        lowered = text.lower()
+
+        # 🔹 ny dag hittad
+        if lowered in WEEKDAYS_ALL:
+            # spara föregående block
+            if current_day and current_items:
+                blocks.append((current_day, current_items))
+
+            current_day = lowered
+            current_items = []
             continue
 
-        items = []
-        start_p = day_node.find_parent("p")
-        if not start_p:
+        # samla endast om vi är inne i en dag
+        if not current_day:
             continue
 
-        for el in start_p.next_siblings:
+        # filtrera bort skräp
+        if (
+            len(text) < 5
+            or "pris" in lowered
+            or "serveras mellan" in lowered
+            or "pensionär" in lowered
+            or "välkommen" in lowered
+            or "information" in lowered
+        ):
+            continue
 
-            # om vi stöter på nästa dag (vardag ELLER helg) → stoppa
-            if hasattr(el, "name") and el.name:
-                strong = el.find("strong")
-                if strong:
-                    next_day = strong.get_text(strip=True).lower()
-                    if next_day in ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]:
-                        break
+        current_items.append(text)
 
-                text = el.get_text(strip=True)
+    # sista blocket
+    if current_day and current_items:
+        blocks.append((current_day, current_items))
 
-            elif isinstance(el, NavigableString):
-                text = str(el).strip()
-            else:
-                continue
-
-            if len(text) < 5:
-                continue
-
-            lowered = text.lower()
-
-            # filtrera bort skräp / info
-            if (
-                "pris" in lowered
-                or "serveras mellan" in lowered
-                or "pensionär" in lowered
-                or "välkommen" in lowered
-                or "information" in lowered
-            ):
-                continue
-
-            items.append(text)
-
-        return items
+    # 🔒 returnera ENDAST dagens vardag
+    for day, items in blocks:
+        if day == TODAY and day in WEEKDAYS_WEEK:
+            return items
 
     return []
+
 
 # =========================
 # Matkällaren – bildigenkänning
