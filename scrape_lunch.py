@@ -182,8 +182,15 @@ def scrape_vidostern():
     collecting = False
     items = []
 
-    for p in container.find_all("p"):
-        text = p.get_text(" ", strip=True)
+    for node in container.children:
+        if isinstance(node, str):
+            text = node.strip()
+        else:
+            text = node.get_text(" ", strip=True)
+
+        if not text:
+            continue
+
         lowered = text.lower()
 
         if lowered in weekdays:
@@ -199,9 +206,7 @@ def scrape_vidostern():
             continue
 
         if (
-            not text
-            or lowered in weekdays
-            or "pris" in lowered
+            "pris" in lowered
             or "serveras mellan" in lowered
             or "pensionär" in lowered
             or "välkommen" in lowered
@@ -213,6 +218,7 @@ def scrape_vidostern():
         items.append(text)
 
     return items
+
 
 
 # =========================
