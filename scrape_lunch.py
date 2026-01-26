@@ -174,11 +174,10 @@ def scrape_vidostern():
     soup = BeautifulSoup(html, "html.parser")
 
     container = soup.find("div", class_="article-dynamic-template-content")
-    if not container:
+    if not container or not TODAY:
         return []
 
     weekdays = ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]
-    weekdays_week = set(weekdays[:5])
 
     collecting = False
     items = []
@@ -188,23 +187,20 @@ def scrape_vidostern():
         lowered = text.lower()
 
         if lowered in weekdays:
-            if lowered == TODAY and lowered in weekdays_week:
+            if lowered == TODAY:
                 collecting = True
                 items = []
-            else:
-                if collecting:
-                    break
-                collecting = False
+                continue
+            if collecting:
+                break
             continue
 
         if not collecting:
             continue
 
-        if lowered in weekdays:
-            break
-
         if (
             not text
+            or lowered in weekdays
             or "pris" in lowered
             or "serveras mellan" in lowered
             or "pensionär" in lowered
@@ -217,6 +213,7 @@ def scrape_vidostern():
         items.append(text)
 
     return items
+
 
 # =========================
 # Matkällaren – bildigenkänning
