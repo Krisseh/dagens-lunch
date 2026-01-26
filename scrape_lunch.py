@@ -177,55 +177,46 @@ def scrape_vidostern():
     if not container:
         return []
 
-    WEEKDAYS_ALL = ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]
-    WEEKDAYS_WEEK = ["måndag", "tisdag", "onsdag", "torsdag", "fredag"]
+    weekdays = ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]
+    weekdays_week = set(weekdays[:5])
 
-    blocks = []
-    current_day = None
-    current_items = []
+    collecting = False
+    items = []
 
-    for el in container.find_all(["p", "strong"]):
-        text = el.get_text(strip=True)
+    for p in container.find_all("p"):
+        text = p.get_text(" ", strip=True)
         lowered = text.lower()
 
-        # 🔹 ny dag hittad
-        if lowered in WEEKDAYS_ALL:
-            # spara föregående block
-            if current_day and current_items:
-                blocks.append((current_day, current_items))
-
-            current_day = lowered
-            current_items = []
+        if lowered in weekdays:
+            if lowered == TODAY and lowered in weekdays_week:
+                collecting = True
+                items = []
+            else:
+                if collecting:
+                    break
+                collecting = False
             continue
 
-        # samla endast om vi är inne i en dag
-        if not current_day:
+        if not collecting:
             continue
 
-        # filtrera bort skräp
+        if lowered in weekdays:
+            break
+
         if (
-            len(text) < 5
+            not text
             or "pris" in lowered
             or "serveras mellan" in lowered
             or "pensionär" in lowered
             or "välkommen" in lowered
             or "information" in lowered
+            or "kockens val" in lowered
         ):
             continue
 
-        current_items.append(text)
+        items.append(text)
 
-    # sista blocket
-    if current_day and current_items:
-        blocks.append((current_day, current_items))
-
-    # 🔒 returnera ENDAST dagens vardag
-    for day, items in blocks:
-        if day == TODAY and day in WEEKDAYS_WEEK:
-            return items
-
-    return []
-
+    return items
 
 # =========================
 # Matkällaren – bildigenkänning
