@@ -169,60 +169,48 @@ def scrape_rasta():
 # =========================
 # Vidöstern
 # =========================
-
 def scrape_vidostern():
-    print("DEBUG: scrape_vidostern() startar")
+    if not TODAY:
+        return []
+
     html = fetch_html("https://www.hotelvidostern.se/matsedeln")
     soup = BeautifulSoup(html, "html.parser")
 
-    container = soup.find("div", class_="article-dynamic-template-content")
-    if not container or not TODAY:
+    raw = []
+    for p in soup.select("div.article-dynamic-template-content p"):
+        txt = p.get_text(" ", strip=True)
+        if txt:
+            raw.append(txt.replace("\ufeff", "").strip())
+
+    start = None
+    end = None
+
+    for i, line in enumerate(raw):
+        if line.lower() == TODAY:
+            start = i + 1
+            break
+
+    if start is None:
         return []
 
-    weekdays = ["måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"]
+    for i in range(start, len(raw)):
+        if raw[i].lower() in WEEKDAYS:
+            end = i
+            break
 
-    collecting = False
+    if end is None:
+        end = len(raw)
+
     items = []
-
-    for node in container.children:
-        if isinstance(node, str):
-            text = node.strip()
-        else:
-            text = node.get_text(" ", strip=True)
-
-        if not text:
+    for line in raw[start:end]:
+        l = line.strip()
+        if not l:
             continue
-
-        lowered = text.lower()
-
-        if lowered in weekdays:
-            if lowered == TODAY:
-                collecting = True
-                items = []
-                continue
-            if collecting:
-                break
+        if l.lower() in WEEKDAYS:
             continue
+        items.append(l)
 
-        if not collecting:
-            continue
-
-        if (
-            "pris" in lowered
-            or "serveras mellan" in lowered
-            or "pensionär" in lowered
-            or "välkommen" in lowered
-            or "information" in lowered
-            or "kockens val" in lowered
-        ):
-            continue
-
-        items.append(text)
-
-    print(items)
     return items
-
-
 
 # =========================
 # Matkällaren – bildigenkänning
