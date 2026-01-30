@@ -177,34 +177,38 @@ def scrape_vidostern():
     if not container or not TODAY:
         return []
 
-    items = []
-    started = False
-
+    texts = []
     for p in container.find_all("p"):
-        text = p.get_text(" ", strip=True)
-        text = text.replace("\ufeff", "").strip()
-        if not text:
+        t = p.get_text(" ", strip=True)
+        t = t.replace("\ufeff", "").strip()
+        if t:
+            texts.append(t)
+
+    today_idx = None
+    for i, t in enumerate(texts):
+        if t.lower().startswith(TODAY):
+            today_idx = i
+            break
+
+    if today_idx is None:
+        return []
+
+    items = []
+    for t in texts[today_idx + 1:]:
+        low = t.lower()
+
+        if any(day in low for day in WEEKDAYS if day != TODAY):
+            break
+        if low.startswith("lördag") or low.startswith("söndag"):
+            break
+        if low.startswith("information"):
+            break
+        if "välkommen" in low:
+            break
+        if "pris" in low or "serveras mellan" in low:
             continue
 
-        low = text.lower()
-
-        if TODAY in low:
-            started = True
-            continue
-
-        if started:
-            if any(day in low for day in WEEKDAYS) and TODAY not in low:
-                break
-            if low.startswith("lördag") or low.startswith("söndag"):
-                break
-            if low.startswith("information"):
-                break
-            if "välkommen" in low:
-                break
-            if "pris" in low or "serveras mellan" in low:
-                continue
-
-            items.append(text)
+        items.append(t)
 
     return [i for i in items if len(i) > 5]
 
