@@ -177,42 +177,36 @@ def scrape_vidostern():
     if not container or not TODAY:
         return []
 
-    texts = []
+    items = []
     started = False
 
     for p in container.find_all("p"):
         text = p.get_text(" ", strip=True)
+        text = text.replace("\ufeff", "").strip()
         if not text:
             continue
 
         low = text.lower()
 
-        if low == TODAY:
+        if TODAY in low:
             started = True
             continue
 
         if started:
-            if low in WEEKDAYS or low in ["lördag", "söndag"]:
+            if any(day in low for day in WEEKDAYS) and TODAY not in low:
+                break
+            if low.startswith("lördag") or low.startswith("söndag"):
                 break
             if low.startswith("information"):
                 break
-            if "serveras mellan" in low:
-                continue
-            if "pris" in low:
-                continue
             if "välkommen" in low:
                 break
+            if "pris" in low or "serveras mellan" in low:
+                continue
 
-            texts.append(text)
+            items.append(text)
 
-    cleaned = [
-        t.replace("\ufeff", "").strip()
-        for t in texts
-        if len(t.strip()) > 5
-    ]
-
-    return cleaned
-
+    return [i for i in items if len(i) > 5]
 
 # =========================
 # Matkällaren – bildigenkänning
