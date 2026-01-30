@@ -170,47 +170,49 @@ def scrape_rasta():
 # Vidöstern
 # =========================
 def scrape_vidostern():
-    if not TODAY:
-        return []
-
     html = fetch_html("https://www.hotelvidostern.se/matsedeln")
     soup = BeautifulSoup(html, "html.parser")
 
-    raw = []
-    for p in soup.select("div.article-dynamic-template-content p"):
-        txt = p.get_text(" ", strip=True)
-        if txt:
-            raw.append(txt.replace("\ufeff", "").strip())
-
-    start = None
-    end = None
-
-    for i, line in enumerate(raw):
-        if line.lower() == TODAY:
-            start = i + 1
-            break
-
-    if start is None:
+    container = soup.select_one("div.article-dynamic-template-content")
+    if not container or not TODAY:
         return []
 
-    for i in range(start, len(raw)):
-        if raw[i].lower() in WEEKDAYS:
-            end = i
-            break
+    texts = []
+    started = False
 
-    if end is None:
-        end = len(raw)
-
-    items = []
-    for line in raw[start:end]:
-        l = line.strip()
-        if not l:
+    for p in container.find_all("p"):
+        text = p.get_text(" ", strip=True)
+        if not text:
             continue
-        if l.lower() in WEEKDAYS:
-            continue
-        items.append(l)
 
-    return items
+        low = text.lower()
+
+        if low == TODAY:
+            started = True
+            continue
+
+        if started:
+            if low in WEEKDAYS or low in ["lördag", "söndag"]:
+                break
+            if low.startswith("information"):
+                break
+            if "serveras mellan" in low:
+                continue
+            if "pris" in low:
+                continue
+            if "välkommen" in low:
+                break
+
+            texts.append(text)
+
+    cleaned = [
+        t.replace("\ufeff", "").strip()
+        for t in texts
+        if len(t.strip()) > 5
+    ]
+
+    return cleaned
+
 
 # =========================
 # Matkällaren – bildigenkänning
@@ -464,7 +466,7 @@ if matkallaren_image and TODAY != 'fredag':
     html += f"<img src='{matkallaren_image}' style='max-width:100%; border-radius:8px;'>"
 
 if TODAY == 'fredag':
-    html += "<ul><li>Schnitzelfredag!!</li></ul>"
+    html += "<ul><li>Schnitzelfredag</li></ul>"
 
 if not matkallaren_image:
     html += "<p><h2>Menyn publiceras som bild – se matkallaren.nu</h2></p>"
