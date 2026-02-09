@@ -76,27 +76,25 @@ def scrape_gastgivargarden():
 # Madame
 # =========================
 def scrape_madame():
+    if not TODAY:
+        return []
+
     html = fetch_html("https://madame.se/dagens-lunch/")
     soup = BeautifulSoup(html, "html.parser")
 
-    container = soup.find("div", class_="lunch_weekdays")
+    container = soup.select_one("div.lunch_weekdays")
     if not container:
         return []
 
     for h5 in container.find_all("h5"):
-        day_text = h5.get_text(strip=True).lower()
-
-        if day_text != TODAY:
-            continue
-
-        dish_p = h5.find_next("p", class_="main_dish")
-        if not dish_p:
-            return []
-
-        dish = dish_p.get_text(strip=True)
-        return [dish]
+        day = h5.get_text(strip=True).lower()
+        if day == TODAY:
+            p = h5.find_next_sibling("p", class_="main_dish")
+            if p:
+                return [p.get_text(strip=True)]
 
     return []
+
 
 # =========================
 # Vandalorum
