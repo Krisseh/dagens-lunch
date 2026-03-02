@@ -213,6 +213,7 @@ def scrape_vidostern():
 # =========================
 # Matkällaren 
 # =========================
+"""
 def scrape_matkallaren():
     print("TODAY:", TODAY)
     if not TODAY:
@@ -296,10 +297,11 @@ def scrape_matkallaren():
             dish = clean.replace("G,L", "").replace("G", "").replace("L", "").strip()
             if dish:
                 items.append(dish)
-
+    print("HÄR ÄR ALLT MATKÄLLAREN HÄMTAR: ")
+    print(items)
     return items
     
-
+"""
 def find_day_positions(image):
     data = pytesseract.image_to_data(
         image,
