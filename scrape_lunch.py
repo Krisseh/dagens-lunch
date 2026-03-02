@@ -389,11 +389,12 @@ data = {
     "Gästgivargården": scrape_gastgivargarden(),
     "Madame": scrape_madame(),
     "Vandalorum (tis–fre)": scrape_vandalorum(),
-    "Vidöstern": scrape_vidostern()
+    "Vidöstern": scrape_vidostern(),
+    "Matkällaren": scrape_matkallaren()
     #"Rasta": scrape_rasta()
 }
 
-matkallaren_image = scrape_matkallaren()
+
 
 # =========================
 # HTML
@@ -493,7 +494,7 @@ for name, items in data.items():
     for item in items:
         html += f"<li>{item}</li>"
     html += "</ul></div>"
-
+"""
 html += "<div class='card'><h2>Matkällaren</h2>"
 if matkallaren_image and TODAY != 'fredag':
     html += f"<img src='{matkallaren_image}' style='max-width:100%; border-radius:8px;'>"
@@ -504,7 +505,7 @@ if TODAY == 'fredag':
 if not matkallaren_image:
     html += "<p><h2>Menyn publiceras som bild – se matkallaren.nu</h2></p>"
 html += "</div>"
-
+"""
 html += "</body></html>"
 
 with open("dagens_lunch.html", "w", encoding="utf-8") as f:
