@@ -211,8 +211,45 @@ def scrape_vidostern():
     return [i for i in items if len(i) > 5]
 
 # =========================
-# Matkällaren – bildigenkänning
+# Matkällaren 
 # =========================
+
+def scrape_matkallaren():
+    if not TODAY:
+        return []
+
+    html = fetch_html("https://www.matkallaren.nu/")
+    soup = BeautifulSoup(html, "html.parser")
+
+    items = []
+    collecting = False
+
+    for li in soup.select("div.tb_text_wrap li"):
+        text = li.get_text(" ", strip=True)
+
+        if not text:
+            continue
+
+        clean = text.replace("\xa0", " ").strip()
+        low = clean.lower()
+
+        if low.startswith(TODAY):
+            collecting = True
+            continue
+
+        if collecting:
+            if any(low.startswith(day) for day in WEEKDAYS):
+                break
+            if low.startswith("veckans"):
+                break
+
+            dish = clean.replace("G,L", "").replace("G", "").replace("L", "").strip()
+            if dish:
+                items.append(dish)
+
+    return items
+    
+"""
 def find_day_positions(image):
     data = pytesseract.image_to_data(
         image,
@@ -341,7 +378,7 @@ def scrape_matkallaren():
     print("Matkällaren: bild sparad:", filename)
 
     return filename
-
+"""
 
 
 
