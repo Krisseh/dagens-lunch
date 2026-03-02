@@ -213,225 +213,50 @@ def scrape_vidostern():
 # =========================
 # Matkällaren 
 # =========================
-"""
-def scrape_matkallaren():
-    print("TODAY:", TODAY)
-    if not TODAY:
-        return []
 
-    html = fetch_html("https://www.matkallaren.nu/")
-    soup = BeautifulSoup(html, "html.parser")
-
-    menu_block = None
-    for wrap in soup.select("div.tb_text_wrap"):
-        if wrap.find(string=lambda s: s and "Måndag" in s):
-            menu_block = wrap
-            break
-
-    if not menu_block:
-        return []
-
-    items = []
-    collecting = False
-
-    for li in menu_block.find_all("li"):
-        text = li.get_text(" ", strip=True)
-        if not text:
-            continue
-
-        clean = text.replace("\xa0", " ").strip()
-        low = clean.lower()
-
-        if low.startswith(TODAY):
-            collecting = True
-            continue
-
-        if collecting:
-            if any(low.startswith(day) for day in WEEKDAYS):
-                break
-            if low.startswith("veckans"):
-                break
-
-            dish = (
-                clean
-                .replace("G,L", "")
-                .replace("G", "")
-                .replace("L", "")
-                .strip()
-            )
-
-            if dish:
-                items.append(dish)
-    print(items)
-    return items
-"""
 def scrape_matkallaren():
     if not TODAY:
         return []
-
+        
     html = fetch_html("https://www.matkallaren.nu/")
     soup = BeautifulSoup(html, "html.parser")
+
+    print("tb_text_wrap found:", "tb_text_wrap" in html)
+    print("Måndag found:", "Måndag" in html)
 
     items = []
     collecting = False
 
     for li in soup.select("div.tb_text_wrap li"):
-        text = li.get_text(" ", strip=True)
-
+        text = li.get_text(" ", strip=True).replace("\xa0", " ").strip()
         if not text:
             continue
+        low = text.lower()
 
-        clean = text.replace("\xa0", " ").strip()
-        low = clean.lower()
+        # Check if this is a day heading
+        is_day_heading = any(low.startswith(day) for day in WEEKDAYS)
 
-        if low.startswith(TODAY):
-            collecting = True
+        if is_day_heading:
+            if low.startswith(TODAY):
+                collecting = True
+            else:
+                if collecting:
+                    break  # We've passed our day
+            continue
+
+        if low.startswith("veckans"):
+            if collecting:
+                break
             continue
 
         if collecting:
-            if any(low.startswith(day) for day in WEEKDAYS):
-                break
-            if low.startswith("veckans"):
-                break
-
-            dish = clean.replace("G,L", "").replace("G", "").replace("L", "").strip()
+            # Strip allergy codes at end: G,L / G / L
+            import re
+            dish = re.sub(r'\s+[GL](,[GL])*\s*$', '', text).strip()
             if dish:
                 items.append(dish)
-    print("HÄR ÄR ALLT MATKÄLLAREN HÄMTAR: ")
-    print(items)
+
     return items
-    
-"""
-def find_day_positions(image):
-    data = pytesseract.image_to_data(
-        image,
-        lang="swe",
-        output_type=Output.DICT,
-        config="--psm 6"
-    )
-
-    positions = {}
-
-    for i, word in enumerate(data["text"]):
-        if not word:
-            continue
-
-        normalized = word.lower().strip(":").strip()
-
-        if normalized in WEEKDAYS:
-            x = data["left"][i]
-            y = data["top"][i]
-            w = data["width"][i]
-            h = data["height"][i]
-
-            if normalized not in positions:
-                positions[normalized] = (x, y, w, h)
-
-    return positions
-
-
-
-def crop_day_from_image(image, day):
-    positions = find_day_positions(image)
-    if day not in positions:
-        return None
-
-    sorted_days = sorted(positions.items(), key=lambda x: x[1][1]) 
-
-    for i, (d, (x, y, w, h)) in enumerate(sorted_days):
-        if d == day:
-            top = y
-            bottom = (
-                sorted_days[i + 1][1][1]
-                if i + 1 < len(sorted_days)
-                else image.height
-            )
-
-            left  = int(image.width * 0.36)   # kapa % från vänster
-            right = int(image.width * 0.97)   # kapa % från höger
-
-
-            return image.crop((left, top, right, bottom))
-
-    return None
-
-
-
-def scrape_matkallaren():
-
-    if TODAY_INDEX >= 5:
-        return None
-
-    menu_page = "https://matkallaren.nu/meny/"
-
-    try:
-        r = requests.get(menu_page, timeout=20)
-    except Exception as e:
-        print("Matkällaren: kunde inte hämta menysidan:", e)
-        return None
-
-    if r.status_code != 200:
-        print("Matkällaren: menysidan returnerade", r.status_code)
-        return None
-
-    soup = BeautifulSoup(r.text, "html.parser")
-
-    menu_img = None
-
-    for img in soup.find_all("img"):
-        classes = img.get("class", [])
-        title = (img.get("title") or "").lower()
-        alt = (img.get("alt") or "").lower()
-
-        if (
-            "wp-post-image" in classes
-            and "meny" in title
-        ):
-            menu_img = img
-            break
-
-    if not menu_img or not menu_img.get("src"):
-        print("Matkällaren: kunde inte identifiera rätt menybild")
-        return None
-
-    image_url = menu_img["src"]
-    print("Matkällaren: hittade menybild:", image_url)
-
-
-    try:
-        img_response = requests.get(image_url, timeout=20)
-    except Exception as e:
-        print("Matkällaren: kunde inte hämta bilden:", e)
-        return None
-
-    if img_response.status_code != 200:
-        print("Matkällaren: bilden returnerade", img_response.status_code)
-        return None
-
-    if not img_response.headers.get("Content-Type", "").startswith("image"):
-        print("Matkällaren: URL returnerade inte en bild")
-        return None
-
-    try:
-        img = Image.open(BytesIO(img_response.content))
-    except UnidentifiedImageError:
-        print("Matkällaren: PIL kunde inte identifiera bilden")
-        return None
-
-    img = img.convert("L")
-
-    cropped = crop_day_from_image(img, TODAY)
-    if not cropped:
-        print("Matkällaren: kunde inte hitta dagens rubrik i bilden")
-        return None
-
-    filename = "matkallaren_dagens_lunch.png"
-    cropped.save(filename)
-    print("Matkällaren: bild sparad:", filename)
-
-    return filename
-"""
-
 
 
 # =========================
