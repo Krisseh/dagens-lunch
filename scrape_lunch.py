@@ -214,6 +214,7 @@ def scrape_vidostern():
 # Matkällaren 
 # =========================
 def scrape_matkallaren():
+    print("TODAY:", TODAY)
     if not TODAY:
         return []
 
@@ -260,7 +261,7 @@ def scrape_matkallaren():
 
             if dish:
                 items.append(dish)
-
+    print(items)
     return items
 """
 def scrape_matkallaren():
