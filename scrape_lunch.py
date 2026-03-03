@@ -217,7 +217,7 @@ def scrape_matkallaren():
     if not TODAY:
         return []
 
-    html = fetch_html("https://www.matkallaren.nu/")
+    html = fetch_html("https://www.matkallaren.nu/meny/")
     soup = BeautifulSoup(html, "html.parser")
 
     items = []
