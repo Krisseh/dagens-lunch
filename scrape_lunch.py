@@ -214,6 +214,8 @@ def scrape_vidostern():
 # Matkällaren 
 # =========================
 
+import re
+
 def scrape_matkallaren():
     if not TODAY:
         return []
@@ -221,41 +223,49 @@ def scrape_matkallaren():
     html = fetch_html("https://www.matkallaren.nu/")
     soup = BeautifulSoup(html, "html.parser")
 
-    for strong in soup.find_all("strong"):
-        text = strong.get_text(strip=True).replace("\xa0", " ")
-        clean = text.lower().replace(":", "").strip()
+    all_li = soup.find_all("li")
 
-        if clean == TODAY:
-            ul = strong.find_parent("ul")
-            if not ul:
-                return []
+    for li in soup.find_all("li"):
+        print(repr(li.get_text(" ", strip=True)))
+    
+    collecting = False
+    items = []
 
-            items = []
+    for li in all_li:
+        text = li.get_text(" ", strip=True)
+        if not text:
+            continue
 
-            for li in ul.find_all("li")[1:]:
-                li_text = li.get_text(" ", strip=True)
-                low = li_text.lower()
+        clean = text.replace("\xa0", " ").strip()
+        low = clean.lower()
 
-                if any(day in low for day in WEEKDAYS):
-                    break
-                if low.startswith("veckans"):
-                    break
+        match = re.match(r"(måndag|tisdag|onsdag|torsdag|fredag)", low)
 
-                dish = (
-                    li_text
-                    .replace("G,L", "")
-                    .replace("G", "")
-                    .replace("L", "")
-                    .strip()
-                )
+        if match:
+            day_found = match.group(1)
 
-                if dish:
-                    items.append(dish)
+            if day_found == TODAY:
+                collecting = True
+                continue
+            elif collecting:
+                break
 
-            return items
-            
-    print([s.get_text(strip=True) for s in soup.find_all("strong")])
-    return []
+        if collecting:
+            if low.startswith("veckans"):
+                break
+
+            dish = (
+                clean
+                .replace("G,L", "")
+                .replace("G", "")
+                .replace("L", "")
+                .strip()
+            )
+
+            if dish and len(dish) > 3:
+                items.append(dish)
+
+    return items
 
 
 # =========================
