@@ -253,7 +253,8 @@ def scrape_matkallaren():
                     items.append(dish)
 
             return items
-
+            
+    print([s.get_text(strip=True) for s in soup.find_all("strong")])
     return []
 
 
