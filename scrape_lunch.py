@@ -217,42 +217,43 @@ def scrape_vidostern():
 def scrape_matkallaren():
     if not TODAY:
         return []
-        
+
     html = fetch_html("https://www.matkallaren.nu/")
     soup = BeautifulSoup(html, "html.parser")
-
-    print("tb_text_wrap found:", "tb_text_wrap" in html)
-    print("Måndag found:", "Måndag" in html)
 
     items = []
     collecting = False
 
-    for li in soup.select("div.tb_text_wrap li"):
-        text = li.get_text(" ", strip=True).replace("\xa0", " ").strip()
+    for li in soup.find_all("li"):
+        strong = li.find("strong")
+        text = li.get_text(" ", strip=True)
+
         if not text:
             continue
-        low = text.lower()
 
-        # Check if this is a day heading
-        is_day_heading = any(low.startswith(day) for day in WEEKDAYS)
+        clean = text.replace("\xa0", " ").strip()
+        low = clean.lower()
 
-        if is_day_heading:
-            if low.startswith(TODAY):
+        if strong:
+            strong_text = strong.get_text(strip=True).lower().replace(":", "")
+            if strong_text == TODAY:
                 collecting = True
-            else:
-                if collecting:
-                    break  # We've passed our day
-            continue
-
-        if low.startswith("veckans"):
-            if collecting:
+                continue
+            if collecting and strong_text in WEEKDAYS:
                 break
-            continue
 
         if collecting:
-            # Strip allergy codes at end: G,L / G / L
-            import re
-            dish = re.sub(r'\s+[GL](,[GL])*\s*$', '', text).strip()
+            if low.startswith("veckans"):
+                break
+
+            dish = (
+                clean
+                .replace("G,L", "")
+                .replace("G", "")
+                .replace("L", "")
+                .strip()
+            )
+
             if dish:
                 items.append(dish)
 
