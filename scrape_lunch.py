@@ -250,9 +250,6 @@ def scrape_matkallaren():
 
             dish = (
                 clean
-                #.replace("G,L", "")
-                #.replace("G", "")
-                #.replace("L", "")
                 .strip()
             )
 
@@ -373,18 +370,7 @@ for name, items in data.items():
     for item in items:
         html += f"<li>{item}</li>"
     html += "</ul></div>"
-"""
-html += "<div class='card'><h2>Matkällaren</h2>"
-if matkallaren_image and TODAY != 'fredag':
-    html += f"<img src='{matkallaren_image}' style='max-width:100%; border-radius:8px;'>"
 
-if TODAY == 'fredag':
-    html += "<ul><li>Schnitzelfredag</li></ul>"
-
-if not matkallaren_image:
-    html += "<p><h2>Menyn publiceras som bild – se matkallaren.nu</h2></p>"
-html += "</div>"
-"""
 html += "</body></html>"
 
 with open("dagens_lunch.html", "w", encoding="utf-8") as f:
