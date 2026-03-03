@@ -213,24 +213,17 @@ def scrape_vidostern():
 # =========================
 # Matkällaren 
 # =========================
-
-
 def scrape_matkallaren():
     if not TODAY:
         return []
 
-    html = fetch_html("https://www.matkallaren.nu/meny/")
+    html = fetch_html("https://www.matkallaren.nu/")
     soup = BeautifulSoup(html, "html.parser")
 
-    all_li = soup.find_all("li")
+    items = []
+    collecting = False
 
     for li in soup.find_all("li"):
-        print(repr(li.get_text(" ", strip=True)))
-    
-    collecting = False
-    items = []
-
-    for li in all_li:
         text = li.get_text(" ", strip=True)
         if not text:
             continue
@@ -238,12 +231,14 @@ def scrape_matkallaren():
         clean = text.replace("\xa0", " ").strip()
         low = clean.lower()
 
-        match = re.match(r"(måndag|tisdag|onsdag|torsdag|fredag)", low)
+        day_match = None
+        for day in WEEKDAYS:
+            if low.startswith(day):
+                day_match = day
+                break
 
-        if match:
-            day_found = match.group(1)
-
-            if day_found == TODAY:
+        if day_match:
+            if day_match == TODAY:
                 collecting = True
                 continue
             elif collecting:
@@ -261,11 +256,10 @@ def scrape_matkallaren():
                 .strip()
             )
 
-            if dish and len(dish) > 3:
+            if dish and len(dish) > 5:
                 items.append(dish)
 
     return items
-
 
 # =========================
 # Kör allt
