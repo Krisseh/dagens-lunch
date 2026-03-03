@@ -221,44 +221,40 @@ def scrape_matkallaren():
     html = fetch_html("https://www.matkallaren.nu/")
     soup = BeautifulSoup(html, "html.parser")
 
-    items = []
-    collecting = False
+    for strong in soup.find_all("strong"):
+        text = strong.get_text(strip=True).replace("\xa0", " ")
+        clean = text.lower().replace(":", "").strip()
 
-    for li in soup.find_all("li"):
-        strong = li.find("strong")
-        text = li.get_text(" ", strip=True)
+        if clean == TODAY:
+            ul = strong.find_parent("ul")
+            if not ul:
+                return []
 
-        if not text:
-            continue
+            items = []
 
-        clean = text.replace("\xa0", " ").strip()
-        low = clean.lower()
+            for li in ul.find_all("li")[1:]:
+                li_text = li.get_text(" ", strip=True)
+                low = li_text.lower()
 
-        if strong:
-            strong_text = strong.get_text(strip=True).lower().replace(":", "")
-            if strong_text == TODAY:
-                collecting = True
-                continue
-            if collecting and strong_text in WEEKDAYS:
-                break
+                if any(day in low for day in WEEKDAYS):
+                    break
+                if low.startswith("veckans"):
+                    break
 
-        if collecting:
-            if low.startswith("veckans"):
-                break
+                dish = (
+                    li_text
+                    .replace("G,L", "")
+                    .replace("G", "")
+                    .replace("L", "")
+                    .strip()
+                )
 
-            dish = (
-                clean
-                .replace("G,L", "")
-                .replace("G", "")
-                .replace("L", "")
-                .strip()
-            )
+                if dish:
+                    items.append(dish)
 
-            if dish:
-                items.append(dish)
+            return items
 
-    print([s.get_text(strip=True) for s in soup.find_all("strong")])
-    return items
+    return []
 
 
 # =========================
