@@ -250,9 +250,9 @@ def scrape_matkallaren():
 
             dish = (
                 clean
-                .replace("G,L", "")
-                .replace("G", "")
-                .replace("L", "")
+                #.replace("G,L", "")
+                #.replace("G", "")
+                #.replace("L", "")
                 .strip()
             )
 
